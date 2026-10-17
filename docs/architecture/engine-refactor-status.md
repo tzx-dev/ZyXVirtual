@@ -19,12 +19,14 @@ A OTA física `laurel_sprout` do Mi A3 não é uma imagem de VM e não foi usada
 
 O APK standard debug foi compilado como `0.2.0-alpha.1` (`versionCode` 102), com 68.146.720 bytes e SHA-256 `63721bf332012025f0d954ba723a13452e195d815deed04a10e52ba94d5b902d`. A suíte local passou em 14 testes Kotlin (4 de pacote, 3 de armazenamento, 4 de comando e 3 de detecção OTA), sem falhas. Os testes Python do empacotador, `py_compile`, `sh -n`, preflight dos assets e `git diff --check` também passaram. A verificação do APK confirmou todos os hashes de runtime e 92 avisos de licença empacotados.
 
+A CI do commit `79598db` passou em todas as etapas, incluindo geração do runtime e builds standard debug, clone debug e standard release unsigned: [execução 39025191582](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39025191582). A prerelease pública [v0.2.0-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.0-alpha.1) contém o APK standard debug. Seu certificado debug SHA-256 coincide com o da release `v0.1.1-alpha.1`, permitindo atualização; não é certificado de produção.
+
 ## O que ainda falta validar
 
-1. Instalar e executar o APK em Android físico, em especial no Galaxy A07 4G: primeiro boot, execução do QEMU Android-linkado, conexão VNC, toque/teclado, QMP e persistência após reinício.
+1. Instalar e executar o APK em Android físico, em especial no Galaxy A07 4G: primeiro boot, execução do QEMU Android-linkado, conexão VNC, toque/teclado, QMP e persistência após reiniciar.
 2. Avaliar memória, temperatura e desempenho TCG no Helio G99. A configuração atual força TCG; a presença de `/dev/kvm` no aparelho não foi verificada e não se deve anunciar aceleração KVM.
 3. Atingir o framework Android com o bootstrap. O smoke test de host chegou ao `init`/APEX, mas não confirmou zygote.
 4. Aplicar e compilar o overlay ZyX dentro de uma árvore LineageOS completa. Este sandbox ARM64 não satisfaz os requisitos de build (host x86-64, 64 GiB RAM efetiva e 400 GiB livres).
 5. Preparar assinatura de produção e autenticação criptográfica do manifesto `.zyxos`; os hashes atuais verificam integridade, não a identidade do publicador.
 
-O build mais recente é uma alpha experimental. A release pública anterior `v0.1.1-alpha.1` não contém o novo runtime; `0.2.0-alpha.1` ainda não foi publicada como release. Consulte também [`../build/build-report.md`](../build/build-report.md), [`android-qemu-runtime-research.md`](android-qemu-runtime-research.md) e [`../roms/lineageos-23.2-virtual-bootstrap.md`](../roms/lineageos-23.2-virtual-bootstrap.md).
+O APK `0.2.0-alpha.1` é uma prévia experimental e ainda não foi testado em aparelho. Consulte também [`../build/build-report.md`](../build/build-report.md), [`android-qemu-runtime-research.md`](android-qemu-runtime-research.md) e [`../roms/lineageos-23.2-virtual-bootstrap.md`](../roms/lineageos-23.2-virtual-bootstrap.md).

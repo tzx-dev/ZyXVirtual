@@ -26,7 +26,7 @@ O APK foi inspecionado como ZIP: os 70 arquivos listados em `assets/zyx-qemu/run
 
 SHA-256 do APK standard debug: `63721bf332012025f0d954ba723a13452e195d815deed04a10e52ba94d5b902d`.
 
-O APK foi compilado localmente; não foi instalado nem executado em telefone. Não há teste ADB do Galaxy A07. A CI atualizada para empacotar o runtime será acompanhada após a publicação do commit. A release pública `v0.1.1-alpha.1` continua sendo o APK anterior, sem esse runtime; `0.2.0-alpha.1` ainda não foi publicada como release. O APK debug não tem assinatura de produção.
+O APK foi compilado localmente; não foi instalado nem executado em telefone. Não há teste ADB do Galaxy A07. A CI do commit `79598db` passou em todas as etapas: [execução 39025191582](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39025191582). A prerelease pública [v0.2.0-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.0-alpha.1) foi publicada com este APK. O SHA-256 do certificado debug (`5ac363a525a32ebaaaf664e5445f039fd81fe3595c451d297c3196bfc3b964f5`) coincide com o asset público v0.1.1-alpha.1; portanto, o APK pode atualizar essa instalação sem desinstalar. Continua sendo chave debug, não assinatura de produção.
 
 ## Guest e limites
 

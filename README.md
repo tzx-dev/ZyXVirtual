@@ -12,7 +12,7 @@ ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmu
 - O `.zyxos` disponível é apenas um bootstrap upstream `lineage_virtio_arm64only`; o overlay `lineage_zyx_virtual` não foi compilado/aplicado. O smoke test em QEMU de host chegou ao `init` e à descompressão de APEX, mas não confirmou zygote/framework em 300 s. A OTA de telefone `laurel_sprout` do Mi A3 não foi usada como guest.
 - A validação local atual passou em 14 testes Kotlin, nos testes Python do empacotador e na conferência de SHA-256 de todos os assets dentro do APK. O APK standard debug de `0.2.0-alpha.1` tem 68.146.720 bytes; veja [relatório de build](docs/build/build-report.md).
 
-A release pública anterior [`v0.1.1-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.1.1-alpha.1) é mais antiga e **não inclui o runtime QEMU**. O código `0.2.0-alpha.1` ainda não foi publicado como release. O pacote bootstrap privado foi enviado ao Drive e tamanho/MD5 remoto conferem; ele não é uma ROM ZyX final.
+A prerelease pública atual é [`v0.2.0-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.0-alpha.1), com o APK standard debug e notas de teste/limitações. A release anterior [`v0.1.1-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.1.1-alpha.1) não inclui o runtime QEMU. O APK alpha usa a mesma assinatura debug da versão anterior para permitir atualização; não é uma chave de produção. O pacote bootstrap privado foi enviado ao Drive e tamanho/MD5 remoto conferem; ele não é uma ROM ZyX final.
 
 ## Estrutura
 
