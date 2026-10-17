@@ -8,7 +8,11 @@ Também não removi o importador que já funciona com os firmwares antigos. Desa
 
 ## O que a documentação confirma
 
-A lista oficial de dispositivos LineageOS não apresentou uma página de dispositivo para Galaxy A07 (`SM-A075F`/`SM-A075M`) durante esta verificação. Portanto, não há base para chamar uma compilação específica do aparelho de “LineageOS oficial” [1].
+Verificação atualizada em **17/10/2026**, assumindo o alvo descrito no pedido original: Galaxy A07 4G. O portal oficial publica builds LineageOS 23.x para Android 16, e o catálogo da API oficial mostra as versões 22.2, 23.2 e 24.0. Pesquisei a lista de codenames dessas versões: não há `a07`, `a075` nem `sm-a075f`. Portanto, não existe um pacote de dispositivo A07 para baixar no portal oficial nesta consulta [5] [6].
+
+A documentação oficial confirma que as aplicações Google não vêm pré-instaladas com LineageOS; são um add-on separado e opcional. Assim, “Android 16 sem GApps” é possível em uma build LineageOS compatível. O bloqueio aqui é o aparelho: a FAQ oficial diz que modelos ausentes da lista não são suportados [7] [8].
+
+Uma imagem de outro aparelho não serviria como ROM não-GSI para o A07. Não encontrei uma build comunitária verificável e específica para `SM-A075F`/`SM-A075M` nesta busca, então não baixei um ZIP aleatório nem o coloquei no app.
 
 A documentação do Android define GSI como uma imagem AOSP genérica destinada a aparelhos físicos compatíveis. Os requisitos publicados incluem bootloader desbloqueável, compatibilidade completa com Project Treble e arquitetura de CPU correspondente. A própria documentação alerta que instalar uma GSI em aparelho incompatível pode impedir o boot; instalação e recuperação são específicas do dispositivo [2]. Isso não torna uma GSI automaticamente um pacote de VM para o app.
 
@@ -31,3 +35,7 @@ Não baixei nem incorporei uma imagem de terceiros porque não há compatibilida
 [2]: https://developer.android.com/topic/generic-system-image "Android Developers — Generic System Images (GSIs)"
 [3]: https://source.android.com/docs/core/virtualization/architecture "Android Open Source Project — AVF architecture"
 [4]: https://www.samsung.com/ae/business/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/ "Samsung — Galaxy A07 SM-A075F e suporte"
+[5]: https://download.lineageos.org/api/v1/devices "LineageOS — API oficial de dispositivos por versão"
+[6]: https://lineageos.org/Changelog-30/ "LineageOS — Android 16 lançado como versão 23.0"
+[7]: https://wiki.lineageos.org/gapps/ "LineageOS Wiki — Google Apps são add-on separado e não vêm na ROM"
+[8]: https://wiki.lineageos.org/faq.html "LineageOS Wiki — dispositivo fora da lista não é suportado"
