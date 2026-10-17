@@ -22,6 +22,7 @@ class ZyxSystemCommandTest {
         assertTrue(args.contains("virtio-net-pci,netdev=zyxnet0,romfile="))
         assertTrue(args.contains("order=c"))
         assertTrue(args.contains("virtio-blk-pci,drive=zyxdisk0,bootindex=0"))
+        assertEquals("unix:/data/user/0/app/files/zyx-os/run/qmp.sock,server=on,wait=off", args[args.indexOf("-qmp") + 1])
         assertTrue(args.none { it.contains("qemu-arm") || it.contains("linux-user") })
     }
 
@@ -50,5 +51,10 @@ class ZyxSystemCommandTest {
         assertTrue(runCatching { ZyxSystemCommand.build(config().copy(memoryMiB = 1024)) }.isFailure)
         assertTrue(runCatching { ZyxSystemCommand.build(config().copy(cpuCount = 9)) }.isFailure)
         assertTrue(runCatching { ZyxSystemCommand.build(config().copy(diskPath = "disk.qcow2")) }.isFailure)
+    }
+
+    @Test fun rejectsQmpUnixPathsAtOrAboveThePlatformLimit() {
+        val tooLong = "/data/user/0/app.zyx.virtual/files/" + "x".repeat(108)
+        assertTrue(runCatching { ZyxSystemCommand.build(config().copy(qmpSocketPath = tooLong)) }.isFailure)
     }
 }

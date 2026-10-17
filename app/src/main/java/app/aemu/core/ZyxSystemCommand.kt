@@ -28,6 +28,9 @@ object ZyxSystemCommand {
         require(config.cpuCount in 1..8) { "A quantidade de CPUs virtuais deve ficar entre 1 e 8." }
         require(config.vncDisplay in 0..99) { "Display VNC inválido." }
         listOf(config.diskPath, config.serialLogPath, config.qmpSocketPath).forEach(::requireAbsolutePath)
+        require(config.qmpSocketPath.toByteArray(Charsets.UTF_8).size < QMP_UNIX_PATH_MAX_BYTES) {
+            "O caminho do socket QMP deve ter menos de 108 bytes."
+        }
         config.dataDiskPath?.let(::requireAbsolutePath)
         require(config.dataDiskPath == null || config.dataDiskPath != config.diskPath) {
             "Os discos de sistema e dados precisam usar caminhos diferentes."
@@ -101,4 +104,6 @@ object ZyxSystemCommand {
     }
 
     private fun qemuOptionPath(value: String): String = value.replace("\\", "\\\\").replace(",", "\\,")
+
+    private const val QMP_UNIX_PATH_MAX_BYTES = 108
 }

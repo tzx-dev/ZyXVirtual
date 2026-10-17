@@ -1,13 +1,12 @@
 package app.aemu.ui
 
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.res.ColorStateList
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
@@ -86,39 +85,49 @@ class ZyxVmActivity : ComponentActivity() {
 
         status = TextView(this).apply {
             setTextColor(Color.WHITE)
-            textSize = 15f
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             gravity = Gravity.CENTER
-            setPadding(16, 10, 16, 10)
-            background = ColorDrawable(0xcc151515.toInt())
+            setPadding(dp(18), dp(14), dp(18), dp(14))
+            background = rounded(Color.rgb(30, 31, 38), dp(20).toFloat(), Color.rgb(76, 78, 94))
+            elevation = dp(5).toFloat()
             text = getString(R.string.zyx_vm_preparing)
             isClickable = false
         }
         val statusLp = FrameLayout.LayoutParams(-1, -2, Gravity.TOP)
-        statusLp.setMargins(16, 24, 16, 0)
+        statusLp.setMargins(dp(16), dp(24), dp(16), 0)
         root.addView(status, statusLp)
 
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(8, 8, 8, 8)
-            background = ColorDrawable(0xcc151515.toInt())
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            background = rounded(Color.rgb(24, 25, 31), dp(22).toFloat(), Color.rgb(54, 55, 66))
         }
         val reset = Button(this).apply {
             text = getString(R.string.zyx_vm_reset)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(61, 90, 254))
+            background = rounded(Color.rgb(61, 90, 254), dp(16).toFloat())
             setTextColor(Color.WHITE)
+            textSize = 13f
+            isAllCaps = false
+            elevation = dp(2).toFloat()
+            setPadding(dp(12), 0, dp(12), 0)
             setOnClickListener {
                 if (session?.requestReset() != true) showStatus("Não foi possível enviar o comando de reinício.")
             }
         }
         val stop = Button(this).apply {
             text = getString(R.string.zyx_vm_stop)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(54, 54, 62))
+            background = rounded(Color.rgb(52, 53, 62), dp(16).toFloat(), Color.rgb(91, 93, 109))
             setTextColor(Color.WHITE)
+            textSize = 13f
+            isAllCaps = false
+            elevation = dp(2).toFloat()
+            setPadding(dp(12), 0, dp(12), 0)
             setOnClickListener { stopAndFinish() }
         }
-        controls.addView(reset, LinearLayout.LayoutParams(0, -2, 1f))
-        controls.addView(stop, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(reset, LinearLayout.LayoutParams(0, dp(52), 1f).apply { setMargins(dp(4), dp(3), dp(4), dp(3)) })
+        controls.addView(stop, LinearLayout.LayoutParams(0, dp(52), 1f).apply { setMargins(dp(4), dp(3), dp(4), dp(3)) })
         val controlsLp = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM)
         root.addView(controls, controlsLp)
         setContentView(root)
@@ -203,33 +212,88 @@ class ZyxVmActivity : ComponentActivity() {
                 val shownText = raw.ifBlank { getString(R.string.zyx_vm_log_empty) }
                 val textView = TextView(this).apply {
                     text = shownText
-                    textSize = 13f
+                    textSize = 12f
                     typeface = Typeface.MONOSPACE
-                    setTextColor(Color.rgb(32, 32, 38))
+                    setTextColor(Color.rgb(221, 224, 236))
                     setTextIsSelectable(true)
-                    val inset = (16 * resources.displayMetrics.density).toInt()
+                    val inset = dp(16)
                     setPadding(inset, inset, inset, inset)
                 }
-                val scrollView = ScrollView(this).apply { addView(textView) }
-                val dialog = AlertDialog.Builder(this)
-                    .setTitle(R.string.zyx_vm_log_title)
-                    .setView(scrollView)
-                    .setNegativeButton(R.string.close, null)
-                    .setNeutralButton(R.string.log_copy) { _, _ ->
-                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.zyx_vm_log_title), shownText))
-                        Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
-                    }
+                val scrollView = ScrollView(this).apply {
+                    background = rounded(Color.rgb(17, 18, 23), dp(18).toFloat(), Color.rgb(65, 67, 82))
+                    isFillViewport = true
+                    addView(textView)
+                }
+                val dialog = Dialog(this)
+                val content = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(18), dp(18), dp(18), dp(16))
+                    background = rounded(Color.rgb(31, 32, 39), dp(26).toFloat(), Color.rgb(76, 78, 94))
+                }
+                val titleRow = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                val title = TextView(this).apply {
+                    text = getString(R.string.zyx_vm_log_title)
+                    textSize = 19f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    setTextColor(Color.WHITE)
+                }
+                titleRow.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
+                titleRow.addView(actionButton(getString(R.string.close), false) { dialog.dismiss() }, LinearLayout.LayoutParams(-2, dp(42)))
+                content.addView(titleRow)
+                content.addView(scrollView, LinearLayout.LayoutParams(-1, 0, 1f).apply {
+                    topMargin = dp(14)
+                    bottomMargin = dp(14)
+                })
+                val actions = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                }
                 if (source?.isFile == true) {
-                    dialog.setPositiveButton(R.string.log_export) { _, _ ->
+                    actions.addView(actionButton(getString(R.string.log_export), false) {
                         pendingExportLog = source
                         exportLogLauncher.launch("zyx-qemu-diagnostic.txt")
-                    }
+                    }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(8) })
                 }
+                actions.addView(actionButton(getString(R.string.log_copy), true) {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.zyx_vm_log_title), shownText))
+                    Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+                }, LinearLayout.LayoutParams(0, dp(48), 1f))
+                content.addView(actions)
+                dialog.setContentView(content)
                 dialog.show()
+                dialog.window?.apply {
+                    setBackgroundDrawableResource(android.R.color.transparent)
+                    setLayout((resources.displayMetrics.widthPixels * 0.92f).toInt(), (resources.displayMetrics.heightPixels * 0.72f).toInt())
+                }
             }
         }
     }
+
+    private fun actionButton(label: String, emphasized: Boolean, onClick: () -> Unit): Button = Button(this).apply {
+        text = label
+        textSize = 12f
+        isAllCaps = false
+        setTextColor(Color.WHITE)
+        background = rounded(
+            if (emphasized) Color.rgb(61, 90, 254) else Color.rgb(53, 54, 64),
+            dp(15).toFloat(),
+            if (emphasized) null else Color.rgb(91, 93, 109),
+        )
+        setPadding(dp(10), 0, dp(10), 0)
+        setOnClickListener { onClick() }
+    }
+
+    private fun rounded(fill: Int, radius: Float, stroke: Int? = null) = GradientDrawable().apply {
+        setColor(fill)
+        cornerRadius = radius
+        stroke?.let { setStroke(dp(1), it) }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun readQemuLogTail(file: File): String {
         if (!file.isFile) return ""

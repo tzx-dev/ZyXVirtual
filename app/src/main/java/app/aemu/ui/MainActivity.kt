@@ -143,8 +143,6 @@ fun Library(model: LibraryModel) {
     }
     var help by remember { mutableStateOf(false) }
     var confirmRemove by remember { mutableStateOf(false) }
-    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val listState = rememberLazyListState()
     val qemuAvailable = remember(ctx) { ZyxQemuSystemProcess.isAvailable(ctx) }
 
     val scope = rememberCoroutineScope()
@@ -184,100 +182,47 @@ fun Library(model: LibraryModel) {
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
+            androidx.compose.material3.TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
-                subtitle = { Text(stringResource(R.string.lib_subtitle)) },
                 actions = {
                     IconButton(onClick = { help = true }) { Icon(Icons.Rounded.Info, stringResource(R.string.help)) }
                     IconButton(onClick = { ctx.startActivity(Intent(ctx, AppSettingsActivity::class.java)) }) {
                         Icon(Icons.Rounded.Settings, stringResource(R.string.settings))
                     }
                 },
-                scrollBehavior = scroll,
             )
         },
-        bottomBar = {
-            val destinations = listOf(
-                Triple(R.string.home_nav_home, Icons.Rounded.Android, 0),
-                Triple(R.string.home_nav_system, Icons.Rounded.FileOpen, 3),
-                Triple(R.string.home_nav_guide, Icons.Rounded.PlayArrow, 4),
-                Triple(R.string.home_nav_project, Icons.Rounded.Info, 5),
-            )
-            val selectedNav = when {
-                listState.firstVisibleItemIndex >= 5 -> 3
-                listState.firstVisibleItemIndex >= 4 -> 2
-                listState.firstVisibleItemIndex >= 3 -> 1
-                else -> 0
-            }
-            NavigationBar {
-                destinations.forEachIndexed { index, (label, icon, target) ->
-                    NavigationBarItem(
-                        selected = selectedNav == index,
-                        onClick = { scope.launch { listState.animateScrollToItem(target) } },
-                        icon = { Icon(icon, contentDescription = null) },
-                        label = { Text(stringResource(label), maxLines = 1) },
-                    )
-                }
+        floatingActionButton = {
+            if (packageState.installed == null && !packageState.installing) {
+                androidx.compose.material3.ExtendedFloatingActionButton(
+                    onClick = { pick.launch(arrayOf("*/*")) },
+                    icon = { Icon(Icons.Rounded.FileOpen, null) },
+                    text = { Text(stringResource(R.string.add_firmware)) },
+                )
             }
         },
     ) { pad ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(pad),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(28.dp),
+        Column(
+            modifier = Modifier.fillMaxSize().padding(pad).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item(key = "home-hero") {
-                ZyxHomeHero(
-                    version = BuildConfig.VERSION_NAME,
-                    onImport = { pick.launch(arrayOf("*/*")) },
-                    onOpenGitHub = { openHomeUrl(ctx, "https://github.com/tzx-dev/ZyXVirtual") },
+            val installed = packageState.installed
+            if (installed != null) {
+                ZyxOsPackageCard(
+                    installed = installed,
+                    qemuAvailable = qemuAvailable,
+                    onBoot = { ctx.startActivity(Intent(ctx, ZyxVmActivity::class.java)) },
+                    onRemove = { confirmRemove = true },
                 )
+            } else if (!packageState.installing) {
+                ZyxOsEmptyCard(onImport = { pick.launch(arrayOf("*/*")) }, onHelp = { help = true })
             }
-            item(key = "home-about") { ZyxHomeAboutCard() }
-            item(key = "home-features") { ZyxHomeFeatures() }
-            item(key = "home-system") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ZyxHomeSectionHeader(
-                        stringResource(R.string.home_system_label),
-                        stringResource(R.string.home_system_title),
-                        Icons.Rounded.Android,
-                    )
-                    Text(
-                        stringResource(R.string.home_system_text),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (packageState.installing || packageState.error != null) {
-                        ZyxOsInstallCard(
-                            state = packageState,
-                            onCancel = model::cancelZyxInstall,
-                            onRetry = { pick.launch(arrayOf("*/*")) },
-                        )
-                    }
-                    packageState.installed?.let { installed ->
-                        ZyxOsPackageCard(
-                            installed = installed,
-                            qemuAvailable = qemuAvailable,
-                            onBoot = { ctx.startActivity(Intent(ctx, ZyxVmActivity::class.java)) },
-                            onRemove = { confirmRemove = true },
-                        )
-                    }
-                    if (packageState.installed == null && !packageState.installing && packageState.error == null) {
-                        ZyxHomeEmptyCard(
-                            onImport = { pick.launch(arrayOf("*/*")) },
-                            onHelp = { help = true },
-                        )
-                    }
-                }
-            }
-            item(key = "home-guide") { ZyxHomeGuide() }
-            item(key = "home-project") {
-                ZyxHomeProject(
-                    onOpenGitHub = { openHomeUrl(ctx, "https://github.com/tzx-dev/ZyXVirtual") },
-                    onOpenReleases = { openHomeUrl(ctx, "https://github.com/tzx-dev/ZyXVirtual/releases") },
+            if (packageState.installing || packageState.error != null) {
+                ZyxOsInstallCard(
+                    state = packageState,
+                    onCancel = model::cancelZyxInstall,
+                    onRetry = { pick.launch(arrayOf("*/*")) },
                 )
             }
         }
@@ -311,10 +256,6 @@ fun Library(model: LibraryModel) {
         onInstall = { file -> AppUpdateManager.installApk(ctx, file) },
         onOpenUrl = { url -> runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) } }
     )
-}
-
-private fun openHomeUrl(context: Context, url: String) {
-    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
 }
 
 @Composable

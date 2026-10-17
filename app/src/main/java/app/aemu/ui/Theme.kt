@@ -46,11 +46,11 @@ private val Dark = darkColorScheme(
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(16.dp),
     medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+    large = RoundedCornerShape(26.dp),
+    extraLarge = RoundedCornerShape(32.dp),
 )
 
 private val base = Typography()

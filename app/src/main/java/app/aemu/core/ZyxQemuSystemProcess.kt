@@ -17,6 +17,7 @@ class ZyxQemuSystemProcess(
 ) : AutoCloseable {
     private val app = context.applicationContext
     @Volatile private var process: Process? = null
+    @Volatile private var activeQmpSocketPath: String? = null
 
     val isRunning: Boolean get() = process?.isAlive == true
 
@@ -24,8 +25,14 @@ class ZyxQemuSystemProcess(
     fun start(): Process {
         check(!isRunning) { "A VM ZyX OS já está em execução." }
         val runtime = ZyxQemuAssetRuntime.install(app)
-        val args = ZyxSystemCommand.build(config)
-        File(config.qmpSocketPath).delete()
+        val qmpSocket = File(app.cacheDir, "zyx-qmp-${android.os.Process.myPid()}.sock")
+        require(qmpSocket.absolutePath.toByteArray(Charsets.UTF_8).size < QMP_UNIX_PATH_MAX_BYTES) {
+            "O caminho do socket QMP excede o limite do sistema."
+        }
+        qmpSocket.delete()
+        activeQmpSocketPath = qmpSocket.absolutePath
+        val launchConfig = config.copy(qmpSocketPath = qmpSocket.absolutePath)
+        val args = ZyxSystemCommand.build(launchConfig)
         File(config.serialLogPath).parentFile?.mkdirs()
         val qemuLog = File(config.serialLogPath).parentFile?.let { File(it, "qemu.log") }
             ?: File(app.cacheDir, "zyx-qemu.log")
@@ -64,7 +71,11 @@ class ZyxQemuSystemProcess(
             if (!running.waitFor(2, TimeUnit.SECONDS)) running.destroyForcibly()
         }
         val stopped = !running.isAlive
-        if (stopped) process = null
+        if (stopped) {
+            process = null
+            activeQmpSocketPath?.let { File(it).delete() }
+            activeQmpSocketPath = null
+        }
         return stopped
     }
 
@@ -78,7 +89,8 @@ class ZyxQemuSystemProcess(
             val socket = LocalSocket()
             try {
                 socket.soTimeout = QMP_TIMEOUT_MS
-                socket.connect(LocalSocketAddress(config.qmpSocketPath, LocalSocketAddress.Namespace.FILESYSTEM))
+                val socketPath = activeQmpSocketPath ?: return false
+                socket.connect(LocalSocketAddress(socketPath, LocalSocketAddress.Namespace.FILESYSTEM))
                 val reader = BufferedReader(InputStreamReader(socket.inputStream, Charsets.UTF_8))
                 val writer = BufferedWriter(OutputStreamWriter(socket.outputStream, Charsets.UTF_8))
                 if (reader.readLine() == null) return false
@@ -109,6 +121,7 @@ class ZyxQemuSystemProcess(
 
     companion object {
         private const val QMP_TIMEOUT_MS = 2_000
+        private const val QMP_UNIX_PATH_MAX_BYTES = 108
         private const val QMP_CONNECT_ATTEMPTS = 20
         private const val QMP_RETRY_DELAY_MS = 100L
         private const val QMP_MAX_REPLY_LINES = 16
