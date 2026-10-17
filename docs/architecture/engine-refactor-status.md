@@ -6,11 +6,13 @@ O objetivo é executar Android full-system ARM64, não simular uma tela. O produ
 
 A OTA física `laurel_sprout` do Mi A3 não é imagem de VM e não foi usada. Em smoke test de host QEMU/TCG, o bootstrap avançou pelo kernel, `init` e descompressão de APEX; não houve confirmação de zygote/framework. Isso não prova boot completo.
 
-## Integração no app `0.2.2-alpha.1`
+## Integração no app `0.2.3-alpha.1`
 
-- `scripts/prepare_qemu_runtime.py` prepara QEMU 11.1.2 system-mode ARM64 e sua closure ELF a partir de pacotes Termux fixados. O runtime incluído tem 70 arquivos declarados no `runtime.json`; o app extrai para área privada e valida tamanho/SHA-256 antes de executar.
+- `scripts/prepare_qemu_runtime.py` prepara QEMU 11.1.2 system-mode ARM64 e sua closure ELF a partir de pacotes Termux fixados, além da keymap `en-us` do source oficial QEMU fixado. O runtime incluído tem 71 arquivos declarados no `runtime.json`; o app extrai para área privada e valida tamanho/SHA-256 antes de executar.
 - `ZyxQemuSystemProcess` inicia QEMU como processo ARM64, configura bibliotecas privadas, monitora processo e controla ciclo de vida por QMP. `ZyxSystemCommand` configura `virt`, TCG, CPU, discos virtio, firmware AAVMF, rede e VNC loopback.
-- O socket QMP agora fica em `cacheDir` em caminho curto (`qmp.sock`), reduzindo o risco de exceder o limite Unix de 108 bytes observado no antigo diretório profundo da VM. O teste Kotlin cobre o caminho produzido e o limite. Ainda não foi medido em dispositivo físico.
+- O socket QMP agora fica em `cacheDir` em caminho curto (`zyx-qmp-<pid>.sock`), reduzindo o risco de exceder o limite Unix de 108 bytes observado no antigo diretório profundo da VM. O teste Kotlin cobre o caminho produzido e o limite. Ainda não foi medido em dispositivo físico.
+- O keymap `en-us` do VNC é incluído no runtime a partir do source QEMU 11.1.2 fixado e validado por SHA-256. O launcher passa o diretório `share/qemu` explicitamente com `-L`, para QEMU localizar `keymaps/en-us`.
+- Cada boot inicia um `qemu.log` limpo, evitando confundir mensagens antigas (incluindo caminho QMP do launcher anterior) com o resultado atual.
 - `ZyxOsVmStorage` valida arquivos-base do manifesto e provisiona cópias graváveis persistentes de `vda`, `vdb` e variáveis UEFI; as imagens do pacote permanecem imutáveis.
 - `ZyxVmActivity` e `ZyxVncView` fornecem vídeo VNC, toque e teclas. O banner de encerramento abre até 24 KiB finais de stdout/stderr em `qemu.log`, com copiar/exportar SAF. O código de saída não determina sozinho a causa.
 - A tela principal foi compactada em uma biblioteca, removendo a antiga landing page extensa. Cartões, botões e diálogo de logs usam azul `#3D5AFE`, formas arredondadas e conteúdo localizado em pt-BR.
@@ -18,7 +20,7 @@ A OTA física `laurel_sprout` do Mi A3 não é imagem de VM e não foi usada. Em
 
 ## Validação local em 17/10/2026
 
-A v0.2.2-alpha.1 compilou no Sandbox ARM64. `testStandardDebugUnitTest` e `testCloneDebugUnitTest` somaram 30 testes Kotlin, sem falhas/erros/skips; os dois testes Python do empacotador passaram. `py_compile`, `sh -n` e `git diff --check` também passaram. Os 70 assets do runtime foram verificados no APK debug conforme tamanho e SHA-256.
+A v0.2.3-alpha.1 compilou no Sandbox ARM64. `testStandardDebugUnitTest` e `testCloneDebugUnitTest` somaram 34 testes Kotlin, sem falhas/erros/skips; os quatro testes Python passaram. `py_compile`, `sh -n`, `scripts/check-engine-assets.sh` e `git diff --check` passaram. Os 71 assets do runtime foram verificados no APK por tamanho/SHA-256.
 
 Artefatos, hashes e limitações estão em [`../build/build-report.md`](../build/build-report.md). Build bem-sucedido e integridade dos assets não substituem teste de inicialização em telefone.
 

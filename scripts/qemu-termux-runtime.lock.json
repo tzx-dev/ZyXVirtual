@@ -943,13 +943,20 @@
       "version": "1.5.7-1"
     }
   ],
+  "qemuKeymap": {
+    "path": "scripts/assets/qemu-keymaps/en-us",
+    "sha256": "52cf4c523e686078699ed58761c7e1443080305237a5f67a3716832570c5c8e5",
+    "sourcePath": "pc-bios/keymaps/en-us",
+    "sourceSha256": "731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016",
+    "sourceUrl": "https://download.qemu.org/qemu-11.1.2.tar.xz"
+  },
   "qemuSourceSha256": "731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016",
   "qemuSourceUrl": "https://download.qemu.org/qemu-11.1.2.tar.xz",
   "repository": "https://packages.termux.dev/apt/termux-main/",
   "rootPackage": "qemu-system-aarch64-headless",
   "schemaVersion": 1,
-  "termuxRecipeUrl": "https://github.com/termux/termux-packages/blob/d7ce1ab2206901d9926b0a04174e045122197a1f/packages/qemu-system-x86-64-headless/build.sh",
   "termuxRecipeCommitSha": "d7ce1ab2206901d9926b0a04174e045122197a1f",
-  "termuxSubpackageUrl": "https://github.com/termux/termux-packages/blob/d7ce1ab2206901d9926b0a04174e045122197a1f/packages/qemu-system-x86-64-headless/qemu-system-aarch64-headless.subpackage.sh",
-  "termuxSubpackageCommitSha": "d7ce1ab2206901d9926b0a04174e045122197a1f"
+  "termuxRecipeUrl": "https://github.com/termux/termux-packages/blob/d7ce1ab2206901d9926b0a04174e045122197a1f/packages/qemu-system-x86-64-headless/build.sh",
+  "termuxSubpackageCommitSha": "d7ce1ab2206901d9926b0a04174e045122197a1f",
+  "termuxSubpackageUrl": "https://github.com/termux/termux-packages/blob/d7ce1ab2206901d9926b0a04174e045122197a1f/packages/qemu-system-x86-64-headless/qemu-system-aarch64-headless.subpackage.sh"
 }

@@ -25,21 +25,25 @@ class ZyxQemuSystemProcess(
     fun start(): Process {
         check(!isRunning) { "A VM ZyX OS já está em execução." }
         val runtime = ZyxQemuAssetRuntime.install(app)
-        val qmpSocket = File(app.cacheDir, "zyx-qmp-${android.os.Process.myPid()}.sock")
+        val qmpSocket = qmpSocketFile(app.cacheDir, android.os.Process.myPid())
         require(qmpSocket.absolutePath.toByteArray(Charsets.UTF_8).size < QMP_UNIX_PATH_MAX_BYTES) {
             "O caminho do socket QMP excede o limite do sistema."
         }
         qmpSocket.delete()
         activeQmpSocketPath = qmpSocket.absolutePath
-        val launchConfig = config.copy(qmpSocketPath = qmpSocket.absolutePath)
+        val launchConfig = config.copy(
+            qmpSocketPath = qmpSocket.absolutePath,
+            qemuDataDirectory = runtime.dataDirectory.absolutePath,
+        )
         val args = ZyxSystemCommand.build(launchConfig)
         File(config.serialLogPath).parentFile?.mkdirs()
         val qemuLog = File(config.serialLogPath).parentFile?.let { File(it, "qemu.log") }
             ?: File(app.cacheDir, "zyx-qemu.log")
+        qemuLog.delete()
         val builder = ProcessBuilder(listOf(runtime.binary.absolutePath) + args)
             .directory(app.filesDir)
             .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.appendTo(qemuLog))
+            .redirectOutput(ProcessBuilder.Redirect.to(qemuLog))
         builder.environment().apply {
             put("HOME", app.filesDir.absolutePath)
             put("TMPDIR", app.cacheDir.absolutePath)
@@ -126,6 +130,8 @@ class ZyxQemuSystemProcess(
         private const val QMP_RETRY_DELAY_MS = 100L
         private const val QMP_MAX_REPLY_LINES = 16
         private val QMP_COMMANDS = setOf("system_powerdown", "system_reset", "quit")
+
+        internal fun qmpSocketFile(cacheDir: File, pid: Int): File = File(cacheDir, "zyx-qmp-$pid.sock")
 
         fun isAvailable(context: Context): Boolean = ZyxQemuAssetRuntime.isAvailable(context)
     }

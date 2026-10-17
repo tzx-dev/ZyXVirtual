@@ -15,6 +15,7 @@ object ZyxQemuAssetRuntime {
     data class PreparedRuntime(
         val binary: File,
         val libraryDirectory: File,
+        val dataDirectory: File,
         val version: String,
     )
 
@@ -39,7 +40,7 @@ object ZyxQemuAssetRuntime {
         if (ready.isFile && ready.readText(Charsets.UTF_8) == manifest.digest && isRuntimeComplete(root, manifest)) {
             val binary = File(root, manifest.binary.path)
             if (!binary.canExecute()) require(binary.setExecutable(true, true)) { "Não foi possível habilitar a execução do QEMU." }
-            return PreparedRuntime(binary, File(root, "lib"), manifest.version)
+            return PreparedRuntime(binary, File(root, "lib"), File(root, "share/qemu"), manifest.version)
         }
 
         val parent = root.parentFile ?: throw IllegalStateException("Pasta privada do runtime QEMU inválida.")
@@ -62,7 +63,7 @@ object ZyxQemuAssetRuntime {
             stage.deleteRecursively()
             throw t
         }
-        return PreparedRuntime(File(root, manifest.binary.path), File(root, "lib"), manifest.version)
+        return PreparedRuntime(File(root, manifest.binary.path), File(root, "lib"), File(root, "share/qemu"), manifest.version)
     }
 
     private fun readManifest(context: Context): RuntimeManifest =

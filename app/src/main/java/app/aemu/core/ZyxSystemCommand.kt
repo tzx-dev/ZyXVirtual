@@ -13,6 +13,7 @@ data class ZyxSystemVmConfig(
     val vncDisplay: Int = 1,
     val serialLogPath: String,
     val qmpSocketPath: String,
+    val qemuDataDirectory: String? = null,
     val kernelPath: String? = null,
     val initrdPath: String? = null,
     val firmwareCodePath: String? = null,
@@ -32,6 +33,7 @@ object ZyxSystemCommand {
             "O caminho do socket QMP deve ter menos de 108 bytes."
         }
         config.dataDiskPath?.let(::requireAbsolutePath)
+        config.qemuDataDirectory?.let(::requireAbsolutePath)
         require(config.dataDiskPath == null || config.dataDiskPath != config.diskPath) {
             "Os discos de sistema e dados precisam usar caminhos diferentes."
         }
@@ -66,6 +68,7 @@ object ZyxSystemCommand {
             "-boot", "order=c",
             "-no-reboot",
         )
+        config.qemuDataDirectory?.let { args += listOf("-L", it) }
         if (config.firmwareCodePath != null) {
             args += listOf("-drive", "if=pflash,format=raw,readonly=on,file=${qemuOptionPath(config.firmwareCodePath)}")
             args += listOf("-drive", "if=pflash,format=raw,file=${qemuOptionPath(config.firmwareVarsPath!!)}")

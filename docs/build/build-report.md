@@ -1,41 +1,44 @@
-# Relatório de build — ZyX Virtual 0.2.2-alpha.1
+# Relatório de build — ZyX Virtual 0.2.3-alpha.1
 
 ## Ambiente e validação local
 
-Validação em 17/10/2026 no Sandbox ARM64 (`aarch64`), OpenJDK 21, Android SDK 36, Build Tools 36.0.0 e Gradle Wrapper 8.14.2. A compilação usa o AAPT2 configurado pelo projeto para este ambiente ARM64.
+Validação em 17/10/2026 no Sandbox ARM64 (`aarch64`), OpenJDK 21, Android SDK 36, Build Tools 36.0.0 e Gradle Wrapper 8.14.2.
 
 Comandos executados:
 
 ```bash
-python3 app/l10n/gen.py
+python3 scripts/prepare_qemu_runtime.py
 python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
 scripts/build-apk.sh testStandardDebugUnitTest testCloneDebugUnitTest \
   assembleStandardDebug assembleCloneDebug assembleStandardRelease
+scripts/check-engine-assets.sh
 ```
 
-Resultado: `BUILD SUCCESSFUL`; 30 testes Kotlin no total nas variantes standard e clone, sem falhas, erros ou skips; 2 testes Python passaram. Também passaram `py_compile`, validação sintática dos scripts Shell e `git diff --check`. Os 70 arquivos do runtime ARM64 foram lidos do APK debug e validados quanto a tamanho e SHA-256 conforme `runtime.json`.
+Resultado: `BUILD SUCCESSFUL`; 34 testes Kotlin nas variantes standard/clone, sem falhas, erros ou skips; 4 testes Python passaram. Também passaram `py_compile`, validação sintática dos scripts Shell, verificação de todos os 71 assets QEMU dentro do APK quanto a tamanho e SHA-256, e `git diff --check`.
 
-## Mudanças nesta alpha
+Um QEMU system-mode instalado no Sandbox foi iniciado com servidor VNC e `-L` apontando para os novos dados até ser encerrado pelo timeout de 3 segundos; não houve erro de keymap. Esse smoke test exercita QEMU do host, não o binário Termux Android nem o APK no Galaxy A07.
 
-- A home foi reduzida à biblioteca compacta: cartão do pacote instalado e estado vazio/importação, sem a antiga landing page longa, blocos de recursos, guia e navegação inferior.
-- A biblioteca, os botões, cartões e o painel de diagnóstico/log seguem a paleta azul `#3D5AFE`, superfícies arredondadas e textos pt-BR.
-- O QMP usa um socket Unix curto em `cacheDir` (`qmp.sock`), evitando o limite de caminho de 108 bytes observado no diretório profundo do estado da VM. O teste de unidade verifica o caminho e limite construídos.
-- O diálogo de logs pode apresentar as últimas 24 KiB do `qemu.log`; permite copiar ou exportar via SAF. Seleção de destino depende do usuário/provedor Android.
+## Correções desta alpha
+
+- O processo QEMU substitui o caminho profundo antigo por `cacheDir/zyx-qmp-<pid>.sock` e confirma limite inferior a 108 bytes. Há teste para a função que cria exatamente esse socket.
+- O QEMU recebe `-L <runtime>/share/qemu`; o runtime agora inclui `keymaps/en-us`, ausente no conjunto anterior de assets. A keymap foi extraída do source oficial `qemu-11.1.2.tar.xz`, cujo hash é verificado pelo lockfile; o próprio arquivo `en-us` também tem SHA-256 fixado.
+- Cada boot inicia um `qemu.log` limpo em vez de acrescentar a saída nova ao fim do log anterior. Isso impede que mensagens de boots passados sejam apresentadas como pertencentes à execução atual.
+- Mantida a biblioteca compacta e o estilo azul `#3D5AFE` com formas arredondadas e interface pt-BR.
 
 ## Runtime QEMU incluído
 
-O runtime ARM64 é QEMU system-mode 11.1.2 derivado de pacotes oficiais Termux fixados no lockfile. O manifesto no APK declara 70 arquivos (binário e bibliotecas); a inspeção local confirmou tamanho e SHA-256 de todos. Isso valida o empacotamento e integridade dos assets, não garante que o ELF execute em todo dispositivo Android.
+QEMU system-mode ARM64 11.1.2 é preparado a partir de pacotes Termux fixados no lockfile. O manifesto `runtime.json` lista 71 arquivos: binário, bibliotecas necessárias e keymap. O APK foi aberto e todos os tamanhos/hashes do manifesto foram revalidados localmente.
 
 ## Artefatos locais
 
 | Variante | Arquivo | Tamanho | SHA-256 |
 |---|---|---:|---|
-| Standard debug | `app/build/outputs/apk/standard/debug/app-standard-debug.apk` | 68.152.870 bytes | `037780c00be3f3a5b3cf258281dd0c66ee6eec4245a6eb0655a77d228217a00e` |
-| Clone debug | `app/build/outputs/apk/clone/debug/app-clone-debug.apk` | 68.152.902 bytes | `3c87e305cbfecf75a500b84d0eed457461bf173c8a3996cf58d9bb3f50497b51` |
-| Standard release unsigned | `app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk` | 60.751.845 bytes | `9dd83e0c3e86c83f949834eaad499ba1feacbe56e3b59ad2b73a86af424c4dea` |
+| Standard debug | `app/build/outputs/apk/standard/debug/app-standard-debug.apk` | 68.159.436 bytes | `7bf354180b1ad39a1a8e93bc996397d4f73372e25a57a6b1cbd74cea88dc865c` |
+| Clone debug | `app/build/outputs/apk/clone/debug/app-clone-debug.apk` | 68.159.448 bytes | `fdaefb26296576cfd81a8ba76a46ab7efed2198e073fbf00c0536caf3845a8db` |
+| Standard release unsigned | `app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk` | 60.757.711 bytes | `8c667ee09fbc0025565be4db6674e7367cf94f187f77936b7637513b30a3b3d0` |
 
-A variante standard tem `applicationId` `app.zyx.virtual`, `versionCode` 104 e `versionName` `0.2.2-alpha.1`. APKs locais em `app/build/outputs/apk/`.
+A variante standard usa `applicationId` `app.zyx.virtual`, `versionCode` 105 e `versionName` `0.2.3-alpha.1`. O APK debug usa o certificado de desenvolvimento usado na prerelease anterior; não é assinatura de produção.
 
 ## Limites
 
-O APK não foi instalado nem executado em Android físico nesta sessão. Portanto, QEMU no Android-linker, boot/zygote/framework, VNC, input, SAF/Drive, temperatura, desempenho TCG e acesso a KVM/AVF seguem sem validação no Galaxy A07 4G. O bootstrap permanece baseado em `lineage_virtio_arm64only`; não se afirma que o overlay `lineage_zyx_virtual` foi compilado/aplicado ou que a ROM ZyX inicializa completamente.
+O build não foi instalado nem executado em telefone. Testes locais validam a geração dos argumentos QEMU, o limite do caminho, os arquivos e os hashes; eles não demonstram execução de QEMU/VNC Android-linkado ou boot completo. Galaxy A07 4G, VNC e input em hardware, SAF/Drive, TCG, KVM/AVF e temperatura continuam por validar. O `.zyxos` ainda é bootstrap upstream e não contém o overlay `lineage_zyx_virtual` aplicado.

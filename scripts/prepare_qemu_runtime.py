@@ -96,6 +96,15 @@ def verify_android_aarch64(binary: Path) -> None:
         raise ValueError("O executável não usa o linker64 do Android.")
 
 
+def copy_qemu_keymap(source: Path, expected_sha256: str, output: Path) -> Path:
+    if not source.is_file() or sha256_file(source) != expected_sha256:
+        raise ValueError("O keymap en-us está ausente ou não corresponde ao SHA-256 fixado.")
+    target = output / "share/qemu/keymaps/en-us"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+    return target
+
+
 def copy_runtime(extracted: Path, output: Path, lock: dict) -> list[dict]:
     prefix = extracted / TERMUX_PREFIX
     binary_source = prefix / "bin/qemu-system-aarch64"
@@ -128,8 +137,12 @@ def copy_runtime(extracted: Path, output: Path, lock: dict) -> list[dict]:
             visited.add(name)
             pending.append(source.resolve())
 
+    keymap = lock.get("qemuKeymap", {})
+    keymap_source = ROOT / keymap.get("path", "")
+    copy_qemu_keymap(keymap_source, keymap.get("sha256", ""), output)
+
     files = []
-    for base in (output / "bin", output / "lib"):
+    for base in (output / "bin", output / "lib", output / "share"):
         for path in sorted(base.rglob("*")):
             if not path.is_file():
                 continue
@@ -151,6 +164,9 @@ def copy_runtime(extracted: Path, output: Path, lock: dict) -> list[dict]:
         "source": {
             "qemuUrl": lock["qemuSourceUrl"],
             "qemuSha256": lock["qemuSourceSha256"],
+            "qemuKeymapUrl": keymap["sourceUrl"],
+            "qemuKeymapPath": keymap["sourcePath"],
+            "qemuKeymapSha256": keymap["sha256"],
             "termuxRecipeUrl": lock["termuxRecipeUrl"],
             "termuxRecipeCommitSha": lock["termuxRecipeCommitSha"],
             "termuxSubpackageUrl": lock["termuxSubpackageUrl"],
@@ -189,6 +205,7 @@ def copy_licenses(extracted: Path, output: Path, lock: dict) -> None:
         "O runtime Android inclui QEMU 11.1.2 distribuído pelo pacote oficial Termux para AArch64 e as bibliotecas compartilhadas necessárias. QEMU é licenciado sob GPL-2.0; o código-fonte correspondente está disponível na URL abaixo e a receita Termux está no repositório citado.",
         "",
         f"- Fonte QEMU: {lock['qemuSourceUrl']} (SHA-256 `{lock['qemuSourceSha256']}`).",
+        f"- Mapa de teclado VNC `en-us`: `{lock['qemuKeymap']['sourcePath']}` no mesmo source QEMU; arquivo SHA-256 `{lock['qemuKeymap']['sha256']}`.",
         f"- Receita Termux: {lock['termuxRecipeUrl']}.",
         f"- Lock de pacotes: `scripts/qemu-termux-runtime.lock.json` no código-fonte do ZyX Virtual.",
         "- Os avisos de copyright/licença encontrados nos pacotes estão em `licenses/<pacote>/`.",

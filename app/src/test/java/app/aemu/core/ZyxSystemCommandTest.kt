@@ -2,6 +2,7 @@ package app.aemu.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import java.io.File
 import org.junit.Test
 
 class ZyxSystemCommandTest {
@@ -56,5 +57,18 @@ class ZyxSystemCommandTest {
     @Test fun rejectsQmpUnixPathsAtOrAboveThePlatformLimit() {
         val tooLong = "/data/user/0/app.zyx.virtual/files/" + "x".repeat(108)
         assertTrue(runCatching { ZyxSystemCommand.build(config().copy(qmpSocketPath = tooLong)) }.isFailure)
+    }
+
+    @Test fun processUsesShortQmpSocketInsideCacheDirectory() {
+        val cache = File("/data/user/0/app.zyx.virtual/cache")
+        val socket = ZyxQemuSystemProcess.qmpSocketFile(cache, 12345)
+        assertEquals("/data/user/0/app.zyx.virtual/cache/zyx-qmp-12345.sock", socket.absolutePath)
+        assertTrue(socket.absolutePath.toByteArray(Charsets.UTF_8).size < 108)
+    }
+
+    @Test fun qemuGetsAnExplicitDataDirectoryForItsVncKeymap() {
+        val dataDirectory = "/data/user/0/app/files/zyx-qemu/runtime/share/qemu"
+        val args = ZyxSystemCommand.build(config().copy(qemuDataDirectory = dataDirectory))
+        assertEquals(dataDirectory, args[args.indexOf("-L") + 1])
     }
 }
