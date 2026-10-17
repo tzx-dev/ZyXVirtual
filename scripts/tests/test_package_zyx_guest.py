@@ -33,11 +33,21 @@ class PackageSourceTests(unittest.TestCase):
                 archive.writestr("VirtualMachine/UTM/system.qcow2", b"qcow")
 
             manifest = PACKAGE.build_manifest(
-                source, "lineage-23.2", "lineage_zyx_virtual", "test-build"
+                source,
+                "lineage-23.2",
+                "lineage_zyx_virtual",
+                "test-build",
+                display_name="ZyX OS — base upstream",
+                provenance={
+                    "sourceProduct": "lineage_virtio_arm64only",
+                    "customProductOverlayApplied": False,
+                },
             )
 
             self.assertEqual(manifest["guest"]["product"], "lineage_zyx_virtual")
             self.assertEqual(len(manifest["files"]), 2)
+            self.assertEqual(manifest["displayName"], "ZyX OS — base upstream")
+            self.assertFalse(manifest["provenance"]["customProductOverlayApplied"])
 
 
 if __name__ == "__main__":

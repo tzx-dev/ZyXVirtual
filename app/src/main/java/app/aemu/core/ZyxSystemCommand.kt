@@ -6,6 +6,8 @@ import java.io.File
 data class ZyxSystemVmConfig(
     val diskPath: String,
     val diskFormat: String = "qcow2",
+    val dataDiskPath: String? = null,
+    val dataDiskFormat: String = "qcow2",
     val memoryMiB: Int = 2048,
     val cpuCount: Int = 2,
     val vncDisplay: Int = 1,
@@ -21,10 +23,15 @@ data class ZyxSystemVmConfig(
 object ZyxSystemCommand {
     fun build(config: ZyxSystemVmConfig): List<String> {
         require(config.diskFormat == "qcow2" || config.diskFormat == "raw") { "Formato de disco ZyX não suportado." }
+        require(config.dataDiskFormat == "qcow2" || config.dataDiskFormat == "raw") { "Formato do disco de dados ZyX não suportado." }
         require(config.memoryMiB in 2048..8192) { "A memória do guest deve ficar entre 2048 e 8192 MiB." }
         require(config.cpuCount in 1..8) { "A quantidade de CPUs virtuais deve ficar entre 1 e 8." }
         require(config.vncDisplay in 0..99) { "Display VNC inválido." }
         listOf(config.diskPath, config.serialLogPath, config.qmpSocketPath).forEach(::requireAbsolutePath)
+        config.dataDiskPath?.let(::requireAbsolutePath)
+        require(config.dataDiskPath == null || config.dataDiskPath != config.diskPath) {
+            "Os discos de sistema e dados precisam usar caminhos diferentes."
+        }
         config.kernelPath?.let(::requireAbsolutePath)
         config.initrdPath?.let(::requireAbsolutePath)
         config.firmwareCodePath?.let(::requireAbsolutePath)
@@ -37,7 +44,7 @@ object ZyxSystemCommand {
         val args = mutableListOf(
             "-name", "ZyX-OS",
             "-machine", "virt,gic-version=3",
-            "-cpu", "cortex-a57",
+            "-cpu", "max",
             "-smp", config.cpuCount.toString(),
             "-m", config.memoryMiB.toString(),
             "-accel", "tcg,thread=multi",
@@ -49,10 +56,11 @@ object ZyxSystemCommand {
             "-device", "virtio-keyboard-pci",
             "-device", "virtio-tablet-pci",
             "-netdev", "user,id=zyxnet0",
-            "-device", "virtio-net-pci,netdev=zyxnet0",
+            "-device", "virtio-net-pci,netdev=zyxnet0,romfile=",
             "-serial", "file:${config.serialLogPath}",
             "-monitor", "none",
             "-qmp", "unix:${config.qmpSocketPath},server=on,wait=off",
+            "-boot", "order=c",
             "-no-reboot",
         )
         if (config.firmwareCodePath != null) {
@@ -64,7 +72,12 @@ object ZyxSystemCommand {
 
         val fileNode = "{\"driver\":\"file\",\"filename\":${jsonQuote(config.diskPath)},\"node-name\":\"zyxfile0\"}"
         val diskNode = "{\"driver\":\"${config.diskFormat}\",\"file\":\"zyxfile0\",\"node-name\":\"zyxdisk0\"}"
-        args += listOf("-blockdev", fileNode, "-blockdev", diskNode, "-device", "virtio-blk-pci,drive=zyxdisk0")
+        args += listOf("-blockdev", fileNode, "-blockdev", diskNode, "-device", "virtio-blk-pci,drive=zyxdisk0,bootindex=0")
+        config.dataDiskPath?.let { dataPath ->
+            val dataFileNode = "{\"driver\":\"file\",\"filename\":${jsonQuote(dataPath)},\"node-name\":\"zyxfile1\"}"
+            val dataDiskNode = "{\"driver\":\"${config.dataDiskFormat}\",\"file\":\"zyxfile1\",\"node-name\":\"zyxdisk1\"}"
+            args += listOf("-blockdev", dataFileNode, "-blockdev", dataDiskNode, "-device", "virtio-blk-pci,drive=zyxdisk1,bootindex=1")
+        }
         return args
     }
 

@@ -1,28 +1,27 @@
-# Estado da refatoração do motor
+# Estado da refatoração do motor ZyX
 
-O pedido exige execução full-system real, sem simular uma tela. O engine original do AEmulator executa QEMU user-mode para guests ARM32; não contém VMM, kernel ARM64 virtual, máquina `virt` ou Android 16. Por isso a OTA do Mi A3 não pode ser usada como guest ZyX.
+O objetivo é executar Android full-system ARM64, não simular uma tela. O AEmulator original executa QEMU user-mode para guests ARM32 e não contém VMM, kernel ARM64 virtual ou Android 16. A OTA física `laurel_sprout` do Mi A3 não é guest utilizável. Para avançar sem compilar a árvore LineageOS completa, foi incorporada uma base virtual upstream `virtio_arm64only` como bootstrap de engenharia.
 
-## Implementado nesta etapa
+## O que está preparado
 
-- Selecionado o produto LineageOS virtual ARM64 `lineage_zyx_virtual`, baseado no device tree upstream `virtio_arm64only`, sem GApps.
-- Criado o construtor de argumentos `ZyxSystemCommand` para QEMU AArch64 system-mode, máquina `virt`, TCG, virtio, VNC local, QMP e armazenamento.
-- Criada a ABI versionada `zyx_qemu_get_api`, bridge JNI C de ciclo de vida e wrapper Kotlin.
-- Criada instalação `.zyxos` via SAF/Drive, em armazenamento privado, com manifesto, hashes por arquivo, rejeição de pacotes incompatíveis e proteção contra path traversal.
-- Removidos do fluxo principal os imports genéricos de ROM, o intent externo de boot legacy e permissões amplas de armazenamento.
-- O diagnóstico verifica a presença das duas bibliotecas necessárias; a inicialização permanece desabilitada porque os binários/renderer não existem no APK.
+O produto-alvo é `lineage_zyx_virtual`, baseado em LineageOS 23.2 / Android 16 para `virtio_arm64only`, sem Google Apps. O overlay ZyX existe no repositório, mas ainda não foi compilado dentro da imagem bootstrap. Foi gerado localmente um pacote `.zyxos` a partir de uma VM UTM/QEMU upstream precompilada, com dois QCOW2, manifesto, hashes por arquivo e firmware AAVMF com avisos de licença. O pacote marca `customProductOverlayApplied: false`; seu nome ZyX no manifesto não altera a identidade do Android interno.
 
-## Validações efetivamente realizadas
+`ZyxSystemCommand` constrói argumentos QEMU AArch64 system-mode para `virt`, TCG, CPU `max`, virtio, dois discos, UEFI pflash, VNC local e QMP. A ordem de boot prioriza explicitamente `vda`; `vdb` é secundário. O dispositivo de rede virtio continua habilitado sem Option ROM PXE. A ABI `zyx_qemu_get_api`, a bridge JNI C e o wrapper Kotlin existem, mas a bridge ainda não foi compilada com NDK nem ligada a um backend QEMU.
 
-- Build Android concluído para standard debug, clone debug e standard release unsigned.
-- Testes unitários: **10/10 passaram** — DeviceOtaProbe (3), política do pacote ZyXOS (4) e builder QEMU system-mode (3).
-- `zyx_qemu_jni.c` passou por sintaxe C com `gcc -Wall -Wextra -Werror`; isso não é build Android NDK nem valida ligação/runtime.
-- Scripts shell, Python, XML de strings e manifesto JSON passaram por validação estática.
-- Debug APK verificado com assinatura de desenvolvimento V2. Nenhum APK foi instalado em aparelho.
+## Validações desta revisão
 
-## Ainda ausente
+` scripts/build-apk.sh testStandardDebugUnitTest assembleStandardDebug` concluiu com sucesso usando o wrapper AAPT2/QEMU do projeto. Passaram 11 testes Kotlin (4 de pacote ZyX, 4 de comando system-mode e 3 de DeviceOtaProbe), e o APK standard debug foi gerado. O hash do APK atual está no `docs/build/build-report.md`. Os testes Python do empacotador passaram 2/2; `py_compile`, `sh -n` dos scripts e `git diff --check` também passaram.
 
-O adaptador QEMU que implementa `zyx_qemu_get_api`, a build QEMU `aarch64-softmmu` para Android, o APK com `libqemu-system-aarch64.so`, display VNC/SDL conectado à tela, eventos de toque/teclado, cópia/overlay gravável de disco, rede e teste de boot. A bridge JNI não foi compilada porque não há NDK Android instalado neste sandbox. O guest LineageOS e o pacote `.zyxos` também não foram construídos.
+O pacote `.zyxos` local foi relido integralmente: os oito arquivos e seus SHA-256 conferem com `ZYX-MANIFEST.json`. Seu SHA-256 externo é `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`. O arquivo de 1,1 GB está em `build/zyxos/` e é um bootstrap upstream, não o produto ZyX final.
 
-## Limites do host
+No QEMU de host 8.2.2 com TCG e discos em snapshot, `-cpu cortex-a57` causou panic em `virt_wifi.ko`; `-cpu max` não repetiu o panic e avançou pelo kernel, `init` Android e descompressão dos APEX. Após 300 segundos não houve confirmação de zygote/framework, então esse teste não demonstra boot Android completo. Um smoke test adicional de 60 segundos usou a sintaxe exata do builder Kotlin (`-blockdev`, `bootindex`, dois discos, AAVMF e virtio): o kernel reconheceu `vda`, `vdb`, GPU e teclado sem erro de inicialização. O Galaxy A07 não foi testado.
 
-A documentação AOSP exige host x86-64, 400 GB de espaço livre e 64 GB RAM para checkout/build. Este sandbox ARM64 tem aproximadamente 35 GB livres e 15 GiB RAM total (cerca de 13 GiB disponíveis na medição atual). O build do APK Android é viável; o build completo da ROM não é. Fontes e medições estão em `docs/architecture/qemu-system-and-build-constraints.md`.
+## O que ainda impede boot pelo app
+
+O boot continua desabilitado. Ainda faltam o adapter QEMU que implementa a ABI, o binário `aarch64-softmmu`/`libqemu-system-aarch64.so` construído para Android, integração JNI/NDK, renderer VNC/Surface e eventos de toque/teclado. O runtime precisa criar overlays graváveis para os discos de sistema/dados e uma cópia gravável das variáveis UEFI, mantendo os arquivos-base imutáveis. A imagem bootstrap ainda é upstream, não recebeu o overlay ZyX e não alcançou o framework no smoke test; também falta teste real no Galaxy A07.
+
+A sessão sandbox não tem credenciais do Google Drive; o pacote bootstrap permanece local e não foi enviado. No app, o provedor Drive pode ser aberto pelo seletor SAF quando o usuário está autenticado no aparelho. A compilação completa da árvore LineageOS também não foi executada: este sandbox ARM64 não tem os recursos de host necessários.
+
+## Limites do host e referências
+
+A documentação AOSP exige host Linux x86-64, pelo menos 64 GiB de RAM efetiva e 400 GiB livres para checkout/build completo. Este sandbox é ARM64, com aproximadamente 35 GB livres e 15 GiB de RAM total (cerca de 13 GiB disponíveis na medição anterior). Veja [`qemu-system-and-build-constraints.md`](qemu-system-and-build-constraints.md) e [`../roms/lineageos-23.2-virtual-bootstrap.md`](../roms/lineageos-23.2-virtual-bootstrap.md).

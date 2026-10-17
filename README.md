@@ -9,10 +9,10 @@ ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmu
 - O instalador copia o pacote para armazenamento privado, valida a identidade/versão do produto, rejeita GApps, confere cada SHA-256 e impede caminhos ZIP inseguros. Há estado de progresso, cancelamento e remoção local; apagar do app não apaga o original no Drive.
 - Os hashes protegem contra corrupção e divergência entre arquivos e manifesto, mas o manifesto ainda não tem assinatura criptográfica do publicador. A distribuição não deve ser tratada como autenticada até uma chave de release estar configurada.
 - O engine original do AEmulator executa guests ARM32 por QEMU user-mode. Esses componentes permanecem no código legado, mas não estão mais expostos na tela principal como suporte a outras ROMs.
-- O construtor testável `ZyxSystemCommand` define argumentos para um QEMU AArch64 system-mode (`virt`, TCG, virtio, VNC local, QMP e disco persistente). A ABI e o código-fonte da bridge JNI ZyX também foram adicionados; a sintaxe C foi validada no host. Eles ainda não iniciam VM: a bridge não foi compilada com NDK, falta o adaptador QEMU que implementa a ABI, o binário QEMU system-mode, o renderer VNC/Surface e a cópia/overlay gravável do disco. **O boot permanece desabilitado e a interface avisa isso explicitamente.**
-- O pacote `.zyxos` final ainda não foi compilado; a árvore LineageOS e o overlay do produto existem, mas não foi realizado boot do guest.
+- O construtor testável `ZyxSystemCommand` define argumentos para QEMU AArch64 system-mode (`virt`, TCG, CPU `max`, virtio, dois discos, UEFI pflash, VNC local e QMP). A ABI e o código-fonte da bridge JNI ZyX também foram adicionados; a sintaxe C foi validada no host. Eles ainda não iniciam VM: faltam o adapter QEMU que implementa a ABI, o binário QEMU system-mode para Android, o renderer VNC/Surface e os overlays graváveis de disco/NVRAM. **O boot no app permanece desabilitado e a interface avisa isso explicitamente.**
+- O pacote final do produto ZyX ainda não foi compilado. Foi gerado localmente um `.zyxos` bootstrap baseado em VM upstream pré-compilada, incluindo firmware AAVMF; manifesto e SHA-256 dos oito arquivos passaram. Em QEMU de host com `-cpu max`, o guest chegou ao `init` e à descompressão de APEX, mas após 300 s não houve confirmação de zygote/framework. Veja [`docs/roms/lineageos-23.2-virtual-bootstrap.md`](docs/roms/lineageos-23.2-virtual-bootstrap.md).
 
-Não se deve apresentar a OTA de telefone `laurel_sprout` do Xiaomi Mi A3 como imagem de VM. Ela não foi convertida nem instalada como guest. O guest ZyX deve ser reconstruído da árvore-fonte para `virtio_arm64only`; não é uma GSI nem firmware de telefone.
+Não se deve apresentar a OTA de telefone `laurel_sprout` do Xiaomi Mi A3 como imagem de VM. Ela não foi convertida nem instalada como guest. A base virtual precompilada pode ser adaptada; para chamar a imagem de ZyX OS final, ainda falta aplicar/buildar o overlay `lineage_zyx_virtual`. Não é GSI nem firmware de telefone.
 
 ## Estrutura
 
@@ -26,7 +26,7 @@ ZyXVirtual/
 ├── scripts/                     # build APK, build guest, pacote e verificações
 ├── docs/architecture/           # auditoria, fontes e status do backend/guest
 ├── docs/build/                  # resultados de build/teste
-├── docs/roms/                   # metadados da OTA Mi A3 (não é guest)
+├── docs/roms/                   # análise da OTA Mi A3 e da base virtual bootstrap
 └── .github/workflows/           # CI Android
 ```
 
@@ -52,7 +52,7 @@ O preflight verifica Linux x86-64, pelo menos 64 GiB de RAM efetiva (considerand
 
 ## Google Drive
 
-No APK, o seletor Android permite abrir o provedor Google Drive se o usuário estiver autenticado no app Drive instalado no aparelho. A sessão Sandbox não tem uma conexão gws autenticada para subir um artefato ao Drive; além disso, ainda não há ROM `.zyxos` final para enviar.
+No APK, o seletor Android permite abrir o provedor Google Drive se o usuário estiver autenticado no app Drive instalado no aparelho. Nesta sessão não foi encontrada uma conexão autenticada do Drive. Existe um `.zyxos` bootstrap local de 1,1 GB, mas ele não é o produto ZyX final e ainda não confirmou boot do framework; não foi enviado ao Drive.
 
 ## GitHub e licença
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import stat
 import sys
@@ -33,7 +34,14 @@ def validate_name(name: str) -> None:
         raise ValueError(f"caminho ZIP inseguro: {name!r}")
 
 
-def build_manifest(source: Path, branch: str, product: str, build_id: str) -> dict:
+def build_manifest(
+    source: Path,
+    branch: str,
+    product: str,
+    build_id: str,
+    display_name: str = "ZyX OS",
+    provenance: dict | None = None,
+) -> dict:
     items = []
     seen = set()
     with zipfile.ZipFile(source, "r") as archive:
@@ -66,10 +74,10 @@ def build_manifest(source: Path, branch: str, product: str, build_id: str) -> di
     if not any(item["path"].lower().endswith((".qcow2", ".img")) for item in items):
         raise ValueError("bundle UTM não contém disco virtual; não será declarado pacote ZyX OS")
 
-    return {
+    manifest = {
         "schemaVersion": 1,
         "packageId": "org.zyx.virtual.os",
-        "displayName": "ZyX OS",
+        "displayName": display_name,
         "os": {"base": "LineageOS", "lineageBranch": branch, "androidMajorVersion": 16,
                "buildId": build_id, "gappsIncluded": False},
         "guest": {"product": product, "deviceCodename": "zyx_virtual",
@@ -78,6 +86,9 @@ def build_manifest(source: Path, branch: str, product: str, build_id: str) -> di
                      "packageType": "utm-qemu-virtual-machine", "minimumMemoryMiB": 2048},
         "files": items,
     }
+    if provenance is not None:
+        manifest["provenance"] = provenance
+    return manifest
 
 
 def main() -> int:
@@ -87,6 +98,12 @@ def main() -> int:
     parser.add_argument("--lineage-branch", default="lineage-23.2")
     parser.add_argument("--product", default="lineage_zyx_virtual")
     parser.add_argument("--build-id", default="unknown")
+    parser.add_argument("--display-name", default="ZyX OS")
+    parser.add_argument("--source-repository")
+    parser.add_argument("--source-release")
+    parser.add_argument("--source-product")
+    parser.add_argument("--source-sha256")
+    parser.add_argument("--custom-product-overlay-applied", choices=("true", "false"), default="true")
     args = parser.parse_args()
 
     source = args.source.resolve()
@@ -102,8 +119,26 @@ def main() -> int:
     if args.product != "lineage_zyx_virtual":
         parser.error("somente o produto lineage_zyx_virtual é aceito")
 
+    source_fields = (args.source_repository, args.source_release, args.source_product, args.source_sha256)
+    provenance = None
+    if any(source_fields):
+        if not all(source_fields):
+            parser.error("proveniência exige repositório, release, produto e SHA-256")
+        if not re.fullmatch(r"[0-9a-f]{64}", args.source_sha256):
+            parser.error("source-sha256 deve conter 64 caracteres hexadecimais minúsculos")
+        provenance = {
+            "repository": args.source_repository,
+            "release": args.source_release,
+            "sourceProduct": args.source_product,
+            "sourceSha256": args.source_sha256,
+            "customProductOverlayApplied": args.custom_product_overlay_applied == "true",
+        }
+
     try:
-        manifest = build_manifest(source, args.lineage_branch, args.product, args.build_id)
+        manifest = build_manifest(
+            source, args.lineage_branch, args.product, args.build_id,
+            display_name=args.display_name, provenance=provenance,
+        )
         output.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, output)
         payload = (json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
