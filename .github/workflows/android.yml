@@ -21,10 +21,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Configurar Android SDK 36
-        uses: android-actions/setup-android@v3
       - name: Instalar plataforma e ferramentas Android
-        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - name: Compilar APKs ZyX
         run: bash ./gradlew --no-daemon testStandardDebugUnitTest assembleStandardDebug assembleCloneDebug assembleStandardRelease
       - name: Publicar artefatos da compilação
