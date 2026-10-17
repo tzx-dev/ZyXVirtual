@@ -38,4 +38,4 @@ A variante standard usa `applicationId` `app.zyx.virtual`, `versionCode` 103 e `
 
 O build local não foi instalado ou executado em aparelho; `adb devices` não listou dispositivo. O comportamento do seletor SAF/Drive e a exportação do log ainda precisam de teste no Android físico. O APK não contém a ROM `.zyxos` e o bootstrap disponível ainda não recebeu o overlay ZyX. Não se afirma boot funcional no Galaxy A07.
 
-A validação de GitHub Actions e a publicação da prévia `v0.2.1-alpha.1` devem ser registradas aqui após a conclusão da CI e da release pública.
+A CI do commit `c63730d` passou em todas as etapas, incluindo geração dos assets e builds standard debug, clone debug e standard release unsigned: [execução 39027031367](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39027031367). A prerelease pública [`v0.2.1-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.1-alpha.1) foi publicada com o APK standard debug indicado nesta tabela; o SHA-256 do asset remoto confere com o arquivo local.

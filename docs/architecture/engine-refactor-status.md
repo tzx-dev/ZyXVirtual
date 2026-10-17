@@ -20,7 +20,7 @@ A OTA física `laurel_sprout` do Mi A3 não é uma imagem de VM e não foi usada
 
 A alpha `0.2.1-alpha.1` (`versionCode` 103) compilou em Sandbox ARM64. A suíte executada para standard e clone totalizou 28 testes Kotlin, sem falhas, erros ou skips. Testes Python do empacotador, `py_compile`, verificações `sh -n`, preflight dos assets e `git diff --check` também passaram. O preflight encontrou os 70 arquivos do runtime.
 
-O APK standard debug tem 68.531.909 bytes e SHA-256 `5754512b8f468077d16b38aaad03be1180f6b21f9fcc690019514bf732a61f70`. O certificado de desenvolvimento SHA-256 coincide com o APK público `v0.2.0-alpha.1`; não é assinatura de produção. Detalhes e hashes das variantes estão em [`../build/build-report.md`](../build/build-report.md).
+O APK standard debug tem 68.531.909 bytes e SHA-256 `5754512b8f468077d16b38aaad03be1180f6b21f9fcc690019514bf732a61f70`. O certificado de desenvolvimento SHA-256 coincide com os APKs públicos `v0.2.0-alpha.1` e `v0.2.1-alpha.1`; não é assinatura de produção. A CI do commit `c63730d` passou na [execução 39027031367](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39027031367), e a [prerelease pública `v0.2.1-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.1-alpha.1) contém este APK. Detalhes e hashes das variantes estão em [`../build/build-report.md`](../build/build-report.md).
 
 ## O que ainda falta validar
 
