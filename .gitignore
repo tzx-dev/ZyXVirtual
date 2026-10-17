@@ -2,7 +2,8 @@
 *_apktool/
 *_jadx/
 .gradle/
-build/
+/build/
+/app/build/
 local.properties
 upstream/
 tools/aapt2
