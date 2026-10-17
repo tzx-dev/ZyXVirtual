@@ -18,6 +18,8 @@ Resultado: `BUILD SUCCESSFUL`; 34 testes Kotlin nas variantes standard/clone, se
 
 Um QEMU system-mode instalado no Sandbox foi iniciado com servidor VNC e `-L` apontando para os novos dados até ser encerrado pelo timeout de 3 segundos; não houve erro de keymap. Esse smoke test exercita QEMU do host, não o binário Termux Android nem o APK no Galaxy A07.
 
+A CI do commit `f95f841429327c270426b3e1542021bdc4d93c3f` passou em [GitHub Actions](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39053613140). O SHA-256 do certificado de desenvolvimento deste APK é `5ac363a525a32ebaaaf664e5445f039fd81fe3595c451d297c3196bfc3b964f5`, igual ao APK `v0.2.2-alpha.1`, permitindo atualização assinada pelo mesmo debug key.
+
 ## Correções desta alpha
 
 - O processo QEMU substitui o caminho profundo antigo por `cacheDir/zyx-qmp-<pid>.sock` e confirma limite inferior a 108 bytes. Há teste para a função que cria exatamente esse socket.

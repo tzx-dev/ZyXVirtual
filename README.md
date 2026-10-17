@@ -15,7 +15,7 @@ ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmu
 - **Limite importante:** esta versão foi compilada e testada no Sandbox; não foi instalada/executada no Galaxy A07 4G. O boot completo do guest, VNC/input em aparelho, SAF/Drive real, desempenho TCG e KVM/AVF seguem sem validação.
 - O `.zyxos` disponível ainda é bootstrap upstream `lineage_virtio_arm64only`. O overlay `lineage_zyx_virtual` não foi compilado/aplicado e não se afirma inicialização completa do Android convidado.
 
-A suíte local v0.2.3-alpha.1 passou em 34 testes Kotlin (standard/clone) e 4 testes Python. Os 71 assets do runtime, incluindo keymap, passaram a verificação de tamanho/SHA-256. O QEMU e a ROM ainda não foram testados no Galaxy A07 4G. APKs e hashes estarão no [relatório de build](docs/build/build-report.md); detalhes no [estado da engine](docs/architecture/engine-refactor-status.md).
+A suíte local v0.2.3-alpha.1 passou em 34 testes Kotlin (standard/clone) e 4 testes Python. Os 71 assets do runtime, incluindo keymap, passaram a verificação de tamanho/SHA-256. A CI remota do commit f95f841 passou. O QEMU e a ROM ainda não foram testados no Galaxy A07 4G. Esta versão está na [prerelease v0.2.3-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.3-alpha.1). APKs e hashes estão no [relatório de build](docs/build/build-report.md); detalhes no [estado da engine](docs/architecture/engine-refactor-status.md).
 
 ## Estrutura
 
