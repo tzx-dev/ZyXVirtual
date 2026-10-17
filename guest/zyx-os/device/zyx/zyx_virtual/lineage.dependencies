@@ -1,0 +1,14 @@
+[
+  {
+    "repository": "android_device_virt_virtio_arm64only",
+    "target_path": "device/virt/virtio_arm64only"
+  },
+  {
+    "repository": "android_device_virt_virtio-common",
+    "target_path": "device/virt/virtio-common"
+  },
+  {
+    "repository": "android_device_virt_virtio_arm64",
+    "target_path": "device/virt/virtio_arm64"
+  }
+]

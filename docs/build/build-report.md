@@ -1,20 +1,14 @@
 # Relatório de build — ZyX Virtual 0.1.0-dev
 
-## Ambiente
+## Ambiente e execução
 
-Validação feita no sandbox ARM64 (`aarch64`) com OpenJDK 21, Android SDK 36, Build Tools 35/36 e Gradle Wrapper 8.14.2. O sandbox tem 6 CPUs, aproximadamente 24 GB de RAM, não expõe `/dev/kvm` e não tinha dispositivo ADB conectado.
+Validação em 17/10/2026 no sandbox ARM64 (`aarch64`), OpenJDK 21, Android SDK 36, Build Tools 36.0.0 e Gradle Wrapper 8.14.2. O Android Gradle Plugin fornece AAPT2 x86_64, então `scripts/build-apk.sh` usa o launcher AAPT2 ARM64/QEMU apenas para a ferramenta de build. Isso não virtualiza o guest Android.
 
-No host ARM64, o AGP fornece AAPT2 x86_64. `scripts/build-apk.sh` compila um launcher AAPT2 ARM64 e executa o utilitário de build via QEMU; isso não virtualiza o Android convidado. O script restaura `gradle.properties` ao terminar.
+## Resultado
 
-## Validações
-
-Comandos executados:
+Comando executado:
 
 ```bash
-python3 -m py_compile app/l10n/gen.py app/l10n/keys.py app/l10n/langs/pt-BR.py app/l10n/langs/en.py
-python3 app/l10n/gen.py
-scripts/check-engine-assets.sh
-scripts/audit-upstream.sh
 scripts/build-apk.sh \
   testStandardDebugUnitTest \
   assembleStandardDebug \
@@ -22,22 +16,28 @@ scripts/build-apk.sh \
   assembleStandardRelease
 ```
 
-Resultados: geração de strings concluída com **180 chaves em pt-BR**; `testStandardDebugUnitTest` terminou sem erro, mas não há testes declarados (`NO-SOURCE`); os três APKs compilaram com `BUILD SUCCESSFUL`. O aplicativo foi verificado com `applicationId` `app.zyx.virtual`, nome **ZyX Virtual** e apenas o locale `pt-BR`. O APK debug usa assinatura de desenvolvimento V2. `git diff --check` também foi executado antes de publicar o código.
+Resultado: `BUILD SUCCESSFUL`. Os testes unitários tiveram **10 testes, 0 falhas, 0 erros e 0 ignorados**: `DeviceOtaProbeTest` (3), `ZyxOsPackageTest` (4) e `ZyxSystemCommandTest` (3). A bridge JNI C também passou em checagem de sintaxe do host com `gcc -std=c11 -Wall -Wextra -Werror -fsyntax-only`; scripts Shell, Python, manifesto JSON e XML de strings passaram por validação estática.
 
-## APKs
+O APK debug foi verificado com `apksigner` usando assinatura de desenvolvimento V2. A variante release é unsigned porque não há keystore de publicação. O workflow GitHub valida adicionalmente a sintaxe C da bridge antes de compilar APKs.
 
-```text
-app/build/outputs/apk/standard/debug/app-standard-debug.apk
-app/build/outputs/apk/clone/debug/app-clone-debug.apk
-app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk
-```
+## APKs gerados
 
-A versão release é unsigned porque não foi fornecido um keystore de publicação. Não instalei nenhum APK nem iniciei um guest em um Galaxy A07 nesta sessão.
+| Variante | Arquivo | Tamanho |
+|---|---|---:|
+| Standard debug, assinado para desenvolvimento | `app/build/outputs/apk/standard/debug/app-standard-debug.apk` | 31.982.276 bytes |
+| Clone debug, assinado para desenvolvimento | `app/build/outputs/apk/clone/debug/app-clone-debug.apk` | 31.981.952 bytes |
+| Standard release, sem assinatura | `app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk` | 24.696.985 bytes |
 
-## Limites e avisos
+Não instalei o APK nem testei num Galaxy A07; não há aparelho ADB conectado.
 
-O guest legado continua limitado ao backend QEMU user-mode ARM32 herdado. Nenhuma ROM LineageOS/GSI foi incluída, AVF/KVM não foi validado e o boot no aparelho real continua pendente. Consulte `docs/architecture/lineageos-gsi-status.md` antes de tentar instalar uma GSI no telefone.
+## Motor e ROM
 
-Há avisos herdados de APIs Android/Compose depreciadas e o AGP avisa sobre `android:extractNativeLibs`; esse atributo é usado para extrair os executáveis do engine. Alguns ELF pré-compilados não podem passar por strip adicional.
+O app agora oferece somente o pacote ZyX OS `.zyxos`, importado pelo seletor SAF (incluindo Drive no celular quando o provedor está autenticado). A instalação valida identidade, versão, arquitetura, política sem GApps, paths do ZIP e SHA-256 de cada payload. O manifesto interno **não tem assinatura criptográfica do publicador**, portanto os hashes detectam corrupção mas ainda não autenticam a origem. O boot fica desabilitado.
 
-O workflow `.github/workflows/android.yml` repete os builds em push/PR e publica os APKs como artefatos GitHub Actions por 30 dias. Não há publicação automática de releases.
+O construtor QEMU system-mode é testado, e a bridge JNI/ABI ZyX existe em fonte, mas a bridge não foi compilada com Android NDK; o adaptador QEMU, `libqemu-system-aarch64.so`, renderer VNC/Surface, entrada, disco overlay e boot continuam ausentes. `scripts/check-engine-assets.sh` informa `PENDING` para esse runtime.
+
+O produto LineageOS 23.2/Android 16 virtual `virtio_arm64only` ainda não foi construído: não há árvore LineageOS completa nem pacote `.zyxos`. A OTA de 1.169.332.586 bytes baixada para `laurel_sprout` é firmware de telefone Mi A3, não guest; permanece fora do Git pelo `.gitignore` e não foi enviada ao Drive. O build completo AOSP requer segundo documentação host x86-64, 400 GB livres e 64 GB RAM; o sandbox ARM64 tem aproximadamente 35 GB livres e 11 GiB RAM.
+
+## Avisos
+
+O AGP emite aviso sobre `android:extractNativeLibs` usado para extrair os executáveis herdados e sobre o override experimental AAPT2. Há APIs Compose/Android depreciadas herdadas do upstream. Consulte `docs/architecture/engine-refactor-status.md` e `docs/architecture/qemu-system-and-build-constraints.md` para os bloqueios e referências.

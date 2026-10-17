@@ -148,6 +148,15 @@ class Importer(
 
     private fun importZipEntries(zip: ZipFile, name: String, depth: Int) {
         val entries = zip.entries.toList()
+        val metadataEntry = entries.firstOrNull {
+            it.name.replace('\\', '/').trimStart('/').endsWith("META-INF/com/android/metadata")
+        }
+        val metadata = metadataEntry?.let { entry ->
+            zip.getInputStream(entry).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        }
+        DeviceOtaProbe.inspect(entries.map { it.name }, metadata)?.let { ota ->
+            throw IOException(DeviceOtaProbe.rejectionMessage(ota))
+        }
         val total = entries.sumOf { maxOf(0L, it.size) }.coerceAtLeast(1)
         var done = 0L
         // сначала — сценарий установки (ссылки и права)

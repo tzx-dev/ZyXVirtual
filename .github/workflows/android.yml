@@ -27,6 +27,8 @@ jobs:
           packages: ''
       - name: Instalar plataforma e ferramentas Android
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Validar sintaxe da bridge JNI
+        run: gcc -std=c11 -Wall -Wextra -Werror -fsyntax-only -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -Inative/qemu-system native/qemu-system/zyx_qemu_jni.c
       - name: Compilar APKs ZyX
         run: bash ./gradlew --no-daemon testStandardDebugUnitTest assembleStandardDebug assembleCloneDebug assembleStandardRelease
       - name: Publicar artefatos da compilação

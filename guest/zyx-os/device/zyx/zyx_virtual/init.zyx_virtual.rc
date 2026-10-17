@@ -1,0 +1,6 @@
+# Copyright (C) 2026 ZyX Virtual contributors
+# SPDX-License-Identifier: Apache-2.0
+# ZyX guest-local state. No AVF daemon or host service is assumed here.
+
+on post-fs-data
+    mkdir /data/zyx 0771 system system

@@ -7,9 +7,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.aemu.core.GuestImage
 import app.aemu.core.ImageStore
+import app.aemu.core.InstalledZyxOs
+import app.aemu.core.ZyxOsPackageStore
 import app.aemu.core.VmSettings
 import app.aemu.importer.Importer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -25,18 +29,68 @@ data class ImportState(
     val done: GuestImage? = null,
 )
 
+data class ZyxOsInstallState(
+    val installed: InstalledZyxOs? = null,
+    val installing: Boolean = false,
+    val bytesDownloaded: Long = 0,
+    val totalBytes: Long = -1,
+    val error: String? = null,
+)
+
 class LibraryModel(app: Application) : AndroidViewModel(app) {
     private val _images = MutableStateFlow<List<GuestImage>>(emptyList())
     val images: StateFlow<List<GuestImage>> = _images
     private val _import = MutableStateFlow(ImportState())
     val import: StateFlow<ImportState> = _import
+    private val _zyxOs = MutableStateFlow(ZyxOsInstallState())
+    val zyxOs: StateFlow<ZyxOsInstallState> = _zyxOs
     private var importer: Importer? = null
+    private var zyxInstallJob: Job? = null
+    private val zyxStore by lazy { ZyxOsPackageStore(getApplication()) }
 
     init { refresh() }
 
     fun refresh() {
         viewModelScope.launch {
-            _images.value = withContext(Dispatchers.IO) { ImageStore.list(getApplication()) }
+            val result = withContext(Dispatchers.IO) {
+                ImageStore.list(getApplication()) to zyxStore.installed()
+            }
+            _images.value = result.first
+            if (!_zyxOs.value.installing) _zyxOs.value = ZyxOsInstallState(installed = result.second)
+        }
+    }
+
+    fun installZyxOs(uri: Uri) {
+        if (_zyxOs.value.installing) return
+        val old = _zyxOs.value.installed
+        _zyxOs.value = ZyxOsInstallState(installed = old, installing = true)
+        zyxInstallJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val installed = zyxStore.installFromUri(uri) { bytes, total ->
+                    _zyxOs.value = _zyxOs.value.copy(bytesDownloaded = bytes, totalBytes = total)
+                }
+                _zyxOs.value = ZyxOsInstallState(installed = installed)
+            } catch (e: CancellationException) {
+                _zyxOs.value = ZyxOsInstallState(installed = zyxStore.installed())
+            } catch (t: Throwable) {
+                _zyxOs.value = ZyxOsInstallState(installed = zyxStore.installed(), error = t.message ?: t.toString())
+            } finally {
+                zyxInstallJob = null
+            }
+        }
+    }
+
+    fun cancelZyxInstall() {
+        zyxInstallJob?.cancel()
+        zyxInstallJob = null
+        _zyxOs.value = ZyxOsInstallState(installed = _zyxOs.value.installed)
+    }
+
+    fun uninstallZyxOs() {
+        if (_zyxOs.value.installing) return
+        viewModelScope.launch(Dispatchers.IO) {
+            zyxStore.uninstall()
+            _zyxOs.value = ZyxOsInstallState()
         }
     }
 

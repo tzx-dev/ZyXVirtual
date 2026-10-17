@@ -25,4 +25,17 @@ for file in "$ASSETS/common/libaemushim.so" "$ASSETS/kk/libGLES.so" "$ASSETS/kk/
   fi
 done
 
+for file in "$ROOT/native/qemu-system/zyx_qemu_api.h" "$ROOT/native/qemu-system/zyx_qemu_jni.c" "$ROOT/native/qemu-system/CMakeLists.txt"; do
+  if [ ! -f "$file" ]; then
+    echo "MISSING system-mode source: $file" >&2
+    fail=1
+  fi
+done
+
+if [ -f "$JNI/libzyx-qemu-jni.so" ] && [ -f "$JNI/libqemu-system-aarch64.so" ]; then
+  echo "PRESENT: JNI/QEMU libraries exist; ABI symbol and runtime boot still require separate validation."
+else
+  echo "PENDING: JNI/QEMU system-mode libraries are not both packaged; Android 16 boot is unavailable."
+fi
+
 exit "$fail"

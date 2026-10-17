@@ -94,7 +94,6 @@ import androidx.compose.material.icons.rounded.Settings
 import android.content.Context
 import app.aemu.core.ZyxRuntime
 
-const val ACTION_BOOT = "app.aemu.BOOT"
 
 class MainActivity : ComponentActivity() {
     private val model: LibraryModel by viewModels()
@@ -104,7 +103,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        askPermissions()
         handleView(intent)
         setContent { AemuTheme { Library(model) } }
     }
@@ -120,9 +118,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleView(i: Intent?) {
-        if (i?.action == Intent.ACTION_VIEW) i.data?.let { model.import(it) }
-        // ярлыки и автоматизация: am start -a app.aemu.BOOT --es id <образ>
-        if (i?.action == ACTION_BOOT) i.getStringExtra("id")?.let { VmActivity.start(this, it, i.getBooleanExtra("recovery", false)) }
+        if (i?.action == Intent.ACTION_VIEW) i.data?.let { model.installZyxOs(it) }
     }
 
     private fun askPermissions() {
@@ -136,16 +132,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Library(model: LibraryModel) {
-    val images by model.images.collectAsState()
-    val imp by model.import.collectAsState()
+    val packageState by model.zyxOs.collectAsState()
     val ctx = LocalContext.current
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { model.import(it) } }
-    var settingsFor by remember { mutableStateOf<GuestImage?>(null) }
-    var deleteFor by remember { mutableStateOf<GuestImage?>(null) }
-    var renameFor by remember { mutableStateOf<GuestImage?>(null) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { model.installZyxOs(it) }
+    }
     var help by remember { mutableStateOf(false) }
-    var addMenu by remember { mutableStateOf(false) }
-    var containerFrom by remember { mutableStateOf<GuestImage?>(null) }
+    var confirmRemove by remember { mutableStateOf(false) }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val scope = rememberCoroutineScope()
@@ -190,87 +183,63 @@ fun Library(model: LibraryModel) {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 subtitle = { Text(stringResource(R.string.lib_subtitle)) },
-                actions = { IconButton(onClick = { help = true }) { Icon(Icons.Rounded.Info, stringResource(R.string.help)) }
-                    IconButton(onClick = { ctx.startActivity(Intent(ctx, AppSettingsActivity::class.java)) }) { Icon(Icons.Rounded.Settings, stringResource(R.string.settings)) } },
+                actions = {
+                    IconButton(onClick = { help = true }) { Icon(Icons.Rounded.Info, stringResource(R.string.help)) }
+                    IconButton(onClick = { ctx.startActivity(Intent(ctx, AppSettingsActivity::class.java)) }) {
+                        Icon(Icons.Rounded.Settings, stringResource(R.string.settings))
+                    }
+                },
                 scrollBehavior = scroll,
             )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { if (images.isEmpty()) pick.launch(arrayOf("*/*")) else addMenu = true },
+                onClick = { pick.launch(arrayOf("*/*")) },
                 icon = { Icon(Icons.Rounded.Add, null) },
                 text = { Text(stringResource(R.string.add_firmware)) },
-                expanded = images.isEmpty() || !scroll.state.collapsedFraction.let { it > 0.5f },
+                expanded = !scroll.state.collapsedFraction.let { it > 0.5f },
             )
         },
     ) { pad ->
-        Box(Modifier.fillMaxSize().padding(pad)) {
-            if (images.isEmpty() && !imp.active) EmptyState(onHelp = { help = true })
-            LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item { StorageAccessCard() }
-                item { if (!imp.active) FirmwareFolderCard(onImport = { f -> model.import(android.net.Uri.fromFile(f)) }) }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(pad),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (packageState.installed == null && !packageState.installing) {
+                item { EmptyState(onHelp = { help = true }) }
+            }
+            if (packageState.installing || packageState.error != null) {
                 item {
-                    AnimatedVisibility(imp.active || imp.error != null || imp.done != null) {
-                        ImportCard(imp, onCancel = model::cancelImport, onDismiss = model::dismissImport)
-                    }
+                    ZyxOsInstallCard(
+                        state = packageState,
+                        onCancel = model::cancelZyxInstall,
+                        onRetry = { pick.launch(arrayOf("*/*")) },
+                    )
                 }
-                // two sections: imported firmwares ("systems") and the containers made from them
-                val systems = images.filter { it.baseId.isEmpty() }
-                val containers = images.filter { it.baseId.isNotEmpty() }
-                for ((title, list) in listOf(R.string.section_systems to systems, R.string.section_containers to containers)) {
-                    if (list.isEmpty()) continue
-                    item(key = "h$title") {
-                        Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 8.dp))
-                    }
-                    items(list, key = { it.id }) { img ->
-                        ImageCard(
-                            img,
-                            onStart = { VmActivity.start(ctx, img.id) },
-                            onSettings = { settingsFor = img },
-                            onRename = { renameFor = img },
-                            onDelete = { deleteFor = img },
-                            baseName = images.firstOrNull { it.id == img.baseId }?.name,
-                        )
-                    }
-                }
+            }
+            packageState.installed?.let { installed ->
+                item { ZyxOsPackageCard(installed, onRemove = { confirmRemove = true }) }
             }
         }
     }
 
-    settingsFor?.let { img ->
-        SettingsSheet(img, onDismiss = { settingsFor = null }, onSave = { s -> model.updateSettings(img, s); settingsFor = null })
-    }
-    deleteFor?.let { img ->
-AlertDialog(
-            onDismissRequest = { deleteFor = null },
-            icon = { Icon(Icons.Rounded.Delete, null) },
-            title = { Text(stringResource(R.string.delete_title, img.name)) },
-            text = { Text(stringResource(R.string.delete_text, Formatter.formatShortFileSize(ctx, img.sizeBytes))) },
-            confirmButton = { Button(onClick = { model.delete(img); deleteFor = null },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.delete)) } },
-            dismissButton = { TextButton(onClick = { deleteFor = null }) { Text(stringResource(R.string.cancel)) } },
-        )
-    }
-    renameFor?.let { img ->
-        var name by remember { mutableStateOf(img.name) }
+    if (confirmRemove) {
         AlertDialog(
-            onDismissRequest = { renameFor = null },
-            title = { Text(stringResource(R.string.name)) },
-            text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
-            confirmButton = { Button(onClick = { model.rename(img, name.trim().ifEmpty { img.name }); renameFor = null }) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = { renameFor = null }) { Text(stringResource(R.string.cancel)) } },
+            onDismissRequest = { confirmRemove = false },
+            icon = { Icon(Icons.Rounded.Delete, null) },
+            title = { Text(stringResource(R.string.zyx_os_remove_title)) },
+            text = { Text(stringResource(R.string.zyx_os_remove_text)) },
+            confirmButton = {
+                Button(onClick = { model.uninstallZyxOs(); confirmRemove = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                    Text(stringResource(R.string.zyx_os_remove))
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (help) HelpDialog(onDismiss = { help = false })
-    if (addMenu) AddSheet(images, onDismiss = { addMenu = false },
-        onImport = { addMenu = false; pick.launch(arrayOf("*/*")) },
-        onContainer = { addMenu = false; containerFrom = it })
-    containerFrom?.let { src -> ContainerDialog(src, images, onDismiss = { containerFrom = null },
-        onCreate = { from, name, copy -> containerFrom = null; model.clone(from, name, copy) }) }
 
     UpdateDialog(
         state = updateState,
@@ -283,6 +252,68 @@ AlertDialog(
         onInstall = { file -> AppUpdateManager.installApk(ctx, file) },
         onOpenUrl = { url -> runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) } }
     )
+}
+
+@Composable
+private fun ZyxOsPackageCard(installed: app.aemu.core.InstalledZyxOs, onRemove: () -> Unit) {
+    val ctx = LocalContext.current
+    Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(52.dp)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.Android, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.zyx_os_installed), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.zyx_os_build), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Text(stringResource(R.string.zyx_os_size, Formatter.formatShortFileSize(ctx, installed.payloadSizeBytes)),
+                style = MaterialTheme.typography.bodySmall)
+            Text("Build: ${installed.manifest.buildId}", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.zyx_os_boot_unavailable), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.tertiary)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onRemove) { Text(stringResource(R.string.zyx_os_remove)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ZyxOsInstallCard(state: ZyxOsInstallState, onCancel: () -> Unit, onRetry: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = if (state.error != null) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                if (state.error != null) stringResource(R.string.zyx_os_install_failed) else stringResource(R.string.import_running),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (state.error != null) {
+                Text(state.error, style = MaterialTheme.typography.bodyMedium)
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.add_firmware)) }
+            } else {
+                val progress = if (state.totalBytes > 0) (state.bytesDownloaded.toFloat() / state.totalBytes).coerceIn(0f, 1f) else -1f
+                if (progress >= 0f) LinearWavyProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                else LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+                if (state.totalBytes > 0) {
+                    Text(stringResource(R.string.zyx_os_progress,
+                        Formatter.formatShortFileSize(LocalContext.current, state.bytesDownloaded),
+                        Formatter.formatShortFileSize(LocalContext.current, state.totalBytes)),
+                        style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Text(stringResource(R.string.zyx_os_verifying), style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.cancel)) }
+            }
+        }
+    }
 }
 
 /** The "+" menu: a firmware file, or a new container of a firmware already here. */

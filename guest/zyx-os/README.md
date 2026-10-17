@@ -1,21 +1,25 @@
-# ZyX OS — camada de produto
+# ZyX OS — produto LineageOS virtual ARM64
 
-Esta árvore é o **overlay de produto** do ZyX OS. Ela não duplica os muitos gigabytes do AOSP/LineageOS e não contém, por si só, um sistema compilado. O build reproduzível deve receber uma árvore LineageOS/AOSP compatível através de `LINEAGE_DIR`.
+Esta árvore define `lineage_zyx_virtual`, um produto baseado no device tree upstream `virtio_arm64only` da LineageOS 23.2 / Android 16. É um produto de VM próprio, não GSI e não a ROM física do Xiaomi Mi A3 ou Galaxy A07. A base LineageOS não inclui Google Apps; GApps são add-on separado e não fazem parte deste produto.
 
-## Alvo inicial
+## Fontes e overlay
 
-- dispositivo lógico: `zyx_virtual`;
-- guest planejado: arm64, quando existir um backend de VM arm64 real;
-- host inicial: Samsung Galaxy A07 4G, conforme a especificação do projeto;
-- interface gráfica e comunicação: virtio/AVF no backend futuro, não o QEMU user-mode legado;
-- boot: kernel ZyX + ramdisk + `system.img`/`vendor.img` próprios, com AVB conforme a versão AOSP escolhida.
+O overlay em `device/zyx/zyx_virtual/` altera identidade, propriedades do produto e init ZyX, herda o BoardConfig e `device.mk` upstream e declara as árvores VirtIO em `lineage.dependencies`. Não inventa kernel, `defconfig`, HAL, VINTF manifest ou blobs físicos. Os repositórios upstream confirmados são:
 
-Os arquivos em `device/zyx/virtual/` são um ponto de partida revisável. Eles não são declarados como uma configuração de placa Samsung, porque o app comum não pode trocar o bootloader/kernel do telefone e a compatibilidade AVF do modelo precisa ser verificada no aparelho.
+- `LineageOS/android_device_virt_virtio_arm64only`
+- `LineageOS/android_device_virt_virtio_arm64`
+- `LineageOS/android_device_virt_virtio-common`
 
 ## Build
 
 ```bash
-LINEAGE_DIR=/caminho/para/lineage scripts/build-zyx-guest.sh
+LINEAGE_DIR=/caminho/para/lineage-23.2 scripts/build-zyx-guest.sh
 ```
 
-Sem `LINEAGE_DIR` ou sem a configuração de build correspondente, o script falha com uma mensagem clara. Ele nunca cria uma imagem vazia e nunca chama isso de ZyX OS compilado.
+O script espera uma árvore `repo` LineageOS completa, instala o overlay sem sobrescrever diretório diferente, resolve as dependências declaradas, verifica o produto e executa `m vm-utm-zip`. Só empacota o `.zyxos` se o ZIP UTM real contiver `config.plist` e imagem de disco; escreve manifesto e SHA-256 dos arquivos.
+
+**Estado:** o device tree e o pipeline estão preparados, mas esta sessão não tem uma árvore LineageOS completa e não produziu a imagem. AOSP documenta requisito de workstation x86-64, 400 GB livres e 64 GB de RAM. O sandbox atual é ARM64, com ~35 GB livres e ~11 GiB RAM. Portanto, não há `.zyxos` pronto para Drive nem boot a relatar.
+
+## Relação com o app
+
+O app aceita somente pacote `.zyxos` com `lineage_zyx_virtual`, Android 16, ARM64, QEMU system-mode e sem GApps. O instalador verifica os hashes e extrai em armazenamento privado. O boot permanece desativado até existir QEMU system-mode Android, renderer de tela/entrada, disco persistente e teste de inicialização real.

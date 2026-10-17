@@ -1,22 +1,20 @@
 # ZyX Virtual engine
 
-Este diretório descreve o backend que o APK realmente empacota. A primeira etapa preserva o motor funcional do upstream, mas passa a expor suas capacidades de forma explícita no código e nos diagnósticos.
+O APK ainda empacota os ELF herdados do AEmulator para QEMU user-mode. Eles executam guests ARM32 legados e não virtualizam kernel. O projeto agora adiciona uma rota separada de system-mode ARM64 para o ZyX OS; ela não substitui o backend antigo até que QEMU Android e a ROM passem por boot real.
 
-## Backend atual
+## Backend legado
 
-- **VMM:** QEMU user-mode modificado, executado como processo Android.
-- **Guest ABI validada:** ARM32 (`armeabi`/`armeabi-v7a`).
-- **Kernel guest:** não é virtualizado; syscalls, Binder, propriedades, entrada, áudio e GL são adaptados pelo conjunto de daemons/shims.
-- **Gráficos:** ponte GL para a GPU do host e framebuffer compartilhado.
-- **Persistência:** árvore de firmware e `/data` vivem no diretório privado de cada imagem; o cartão compartilhado usa `ZyXVirtual/` com fallback de leitura do diretório legado `AEmulator/`.
-- **Bibliotecas:** os ELF do motor continuam em `app/src/main/jniLibs/arm64-v8a/` e os shims guest em `app/src/main/assets/engines/`.
+- ABI de guest validada: ARM32 (`armeabi` / `armeabi-v7a`).
+- Syscalls, Binder, propriedades, entrada, áudio e GL são adaptados por daemons e shims; não há kernel Android moderno executando no guest.
+- Os artefatos e shims herdados ficam em `app/src/main/jniLibs/arm64-v8a/` e `app/src/main/assets/engines/`.
+- A tela principal ZyX não oferece mais importação genérica de outras ROMs; os componentes permanecem no código legado para compatibilidade, mas não representam o alvo do produto.
 
-A presença de `/dev/kvm` no host é mostrada como diagnóstico, mas **não transforma o backend atual em uma VM KVM**. A segunda etapa deve introduzir um backend separado, preferencialmente baseado no AVF/crosvm quando o aparelho expuser os pré-requisitos no bootloader, kernel e serviço de virtualização.
+## Novo alvo system-mode
 
-## Manifesto do backend
+`app/.../ZyxSystemCommand.kt` cria argumentos QEMU para AArch64 `virt`/TCG/virtio e tem testes unitários. `native/qemu-system/` define uma ABI versionada e a bridge JNI em C; o wrapper Kotlin é `ZyxQemuSystemBridge.kt`. A bridge não está compilada com NDK e ainda falta o adapter QEMU que implementa `zyx_qemu_get_api`, o binário `libqemu-system-aarch64.so`, renderer, input e disco gravável separado. Por isso o diagnóstico informa que o QEMU system-mode não está empacotado e a inicialização permanece desabilitada.
 
-`manifest/zyx-engine.json` é a fonte legível por ferramentas e documentação. `scripts/check-engine-assets.sh` verifica se os artefatos binários necessários continuam presentes.
+O manifesto `manifest/zyx-engine.json` diferencia claramente capabilities reais e futuras. `scripts/check-engine-assets.sh` valida o backend legado e imprime o estado do system-mode sem confundir presença de código-fonte com VM funcional.
 
 ## Regra de honestidade
 
-Não coloque uma imagem LineageOS/AOSP moderna neste backend alegando que ela está virtualizada. O contrato atual aceita apenas guests legados validados. O scaffolding em `guest/zyx-os/` é uma sobreposição de produto para a futura árvore AOSP/LineageOS; não é uma cópia completa desses repositórios.
+AVF/KVM não são presumidos nem usados pelo backend legado. A OTA de telefone Mi A3 não é uma VM. Não declare suporte a LineageOS 23.2/Android 16 até que a imagem ZyX OS, o adapter QEMU, a bridge/renderização e o ciclo de boot completo tenham sido compilados e testados.

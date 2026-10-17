@@ -22,6 +22,7 @@ object ZyxRuntime {
         val memoryMb: Int,
         val gpu: String,
         val kvmDevice: Boolean,
+        val qemuSystemBundled: Boolean,
     )
 
     fun probe(ctx: Context): HostCapabilities {
@@ -35,6 +36,7 @@ object ZyxRuntime {
             memoryMb = (memory.totalMem / (1024L * 1024L)).toInt().coerceAtLeast(0),
             gpu = HostInfo.gpu().ifBlank { "desconhecida" },
             kvmDevice = File("/dev/kvm").let { it.exists() && it.canRead() },
+            qemuSystemBundled = ZyxQemuSystemBridge.isAvailable(ctx),
         )
     }
 
@@ -51,7 +53,8 @@ object ZyxRuntime {
             append("Host ABI: ").append(abi).append('\n')
             append("CPU: ").append(h.cpuCount).append(" threads · RAM ").append(h.memoryMb).append(" MB\n")
             append("GPU: ").append(h.gpu).append('\n')
-            append("Backend: ").append(backend)
+            append("Backend legado: ").append(backend).append('\n')
+            append("QEMU system-mode arm64: ").append(if (h.qemuSystemBundled) "bibliotecas presentes" else "não empacotado; boot desabilitado")
         }
     }
 

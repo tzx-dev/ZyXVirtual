@@ -13,6 +13,7 @@ tools/aapt2
 *.iml
 /dist/
 /artifacts/lineageos/
+/artifacts/zyxos/
 .claude/
 __pycache__/
 # ключи подписи — никогда не в репозиторий
@@ -20,3 +21,5 @@ keystore/
 keystore.properties
 *.jks
 *.keystore
+/app/src/main/jniLibs/arm64-v8a/libzyx-qemu-jni.so
+/app/src/main/jniLibs/arm64-v8a/libqemu-system-aarch64.so

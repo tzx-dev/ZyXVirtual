@@ -1,41 +1,45 @@
-# LineageOS/GSI: situação e bloqueios para o Galaxy A07
+# LineageOS, OTA Mi A3 e alvo virtual ZyX
 
-## Resultado nesta entrega
+## Decisão atual
 
-O app **não inclui uma ROM LineageOS/GSI**. O motor atual do ZyX Virtual herda o caminho de compatibilidade do AEmulator: QEMU user-mode para sistemas ARM de 32 bits antigos. Ele não inicializa um kernel Android arm64 e não carrega uma GSI moderna como convidado. Colocar um arquivo `system.img` no APK, sem o kernel, o vendor e o backend de VM compatíveis, não produziria um sistema inicializável.
+O produto ZyX não usará uma GSI genérica, nem uma ROM de telefone para Galaxy A07/Xiaomi Mi A3. O alvo selecionado é **LineageOS 23.2 / Android 16**, recompilado para o device tree virtual ARM64 `virtio_arm64only`, com identidade `lineage_zyx_virtual` e sem GApps. Esta é uma build de sistema virtual, não uma ROM instalável no hardware físico.
 
-Também não removi o importador que já funciona com os firmwares antigos. Desativá-lo agora, antes de existir uma ROM ZyX testada, deixaria o app sem um sistema que consiga iniciar e daria a impressão errada de que a GSI está pronta.
+A OTA oficial baixada para Xiaomi Mi A3 (`laurel_sprout`) é um pacote A/B de atualização de telefone. Ela não contém a configuração/kernels de VM que o app precisa e não foi transplantada para ZyX OS. O importador genérico de ROMs foi retirado do fluxo principal; o app agora só aceita um pacote `.zyxos` que passe pelo manifesto de produto e pelos hashes.
 
-## O que a documentação confirma
+## Galaxy A07 físico
 
-Verificação atualizada em **17/10/2026**, assumindo o alvo descrito no pedido original: Galaxy A07 4G. O portal oficial publica builds LineageOS 23.x para Android 16, e o catálogo da API oficial mostra as versões 22.2, 23.2 e 24.0. Pesquisei a lista de codenames dessas versões: não há `a07`, `a075` nem `sm-a075f`. Portanto, não existe um pacote de dispositivo A07 para baixar no portal oficial nesta consulta [5] [6].
+Verificação atualizada em **17/10/2026**, com o Galaxy A07 4G como o aparelho original do pedido: o portal oficial publica LineageOS 23.x/Android 16, mas a lista consultada não contém `a07`, `a075` ou `sm-a075f`. Não há uma build oficial device-specific do A07 para baixar. Não encontrei uma build comunitária verificável específica de `SM-A075F`/`SM-A075M`; nenhum ZIP aleatório foi baixado para o app.
 
-A documentação oficial confirma que as aplicações Google não vêm pré-instaladas com LineageOS; são um add-on separado e opcional. Assim, “Android 16 sem GApps” é possível em uma build LineageOS compatível. O bloqueio aqui é o aparelho: a FAQ oficial diz que modelos ausentes da lista não são suportados [7] [8].
+A documentação Android define GSI como imagem AOSP genérica para aparelhos físicos com compatibilidade Project Treble e arquitetura correspondentes. Isso não a transforma em imagem de VM. O AVF também é uma arquitetura própria que depende do kernel/VMM/serviços expostos pelo host; não basta colocar `system.img` no APK.
 
-Uma imagem de outro aparelho não serviria como ROM não-GSI para o A07. Não encontrei uma build comunitária verificável e específica para `SM-A075F`/`SM-A075M` nesta busca, então não baixei um ZIP aleatório nem o coloquei no app.
+A ficha Samsung identifica o Galaxy A07 SM-A075F, mas não declara suporte a `/dev/kvm` ou AVF para apps de terceiros. Não há aparelho A07 conectado por ADB nesta sessão e o sandbox não oferece `/dev/kvm`; compatibilidade física e boot no Galaxy continuam sem teste.
 
-A documentação do Android define GSI como uma imagem AOSP genérica destinada a aparelhos físicos compatíveis. Os requisitos publicados incluem bootloader desbloqueável, compatibilidade completa com Project Treble e arquitetura de CPU correspondente. A própria documentação alerta que instalar uma GSI em aparelho incompatível pode impedir o boot; instalação e recuperação são específicas do dispositivo [2]. Isso não torna uma GSI automaticamente um pacote de VM para o app.
+## ROM virtual Android 16
 
-O AVF usa um caminho distinto, baseado em ARM64, KVM/pKVM, kernel e processo de boot do dispositivo, além do serviço de virtualização/crosvm. A arquitetura não pode ser adicionada apenas empacotando uma ROM dentro de um APK [3].
+As fontes oficiais consultadas indicam uma rota distinta: produto LineageOS virtual ARM64, baseado no upstream `virtio_arm64only`, com pacote UTM/QEMU. O overlay ZyX e a receita de build estão versionados em `guest/zyx-os/device/zyx/zyx_virtual/` e `scripts/build-zyx-guest.sh`. O `.zyxos` final ainda não foi construído.
 
-A ficha oficial da Samsung identifica o Galaxy A07 (SM-A075F) e fornece manual do modelo em Android 16; a ficha não declara suporte a `/dev/kvm` ou AVF para apps de terceiros [4]. Neste ambiente não há Galaxy A07 conectado por ADB e o sandbox não disponibiliza `/dev/kvm`. O teste físico que confirmaria Treble, ABI, partições e virtualização ainda não foi feito.
+O instalador Android espera exclusivamente `lineage_zyx_virtual` / LineageOS 23.2 / Android 16 / AArch64 / sem GApps / QEMU `virt`; rejeita OTA de telefone, outra arquitetura ou pacotes com Google Apps. A instalação via Google Drive é feita pelo seletor Android (Storage Access Framework) no aparelho do usuário, sem credenciais embutidas no APK.
 
-## Requisitos para continuar sem fingir compatibilidade
+## Bloqueios e próximos passos
 
-1. Conectar o Galaxy A07 por ADB e coletar `ro.treble.enabled`, `ro.product.cpu.abi`, `ro.product.cpu.abilist`, `ro.boot.dynamic_partitions`, versão do kernel e existência/permissões de `/dev/kvm`.
-2. Identificar o modelo exato e região (`SM-A075F`, `SM-A075M` ou outro) e confirmar método oficial/seguro de recuperação antes de qualquer teste de flash físico.
-3. Escolher conscientemente entre uma GSI destinada a instalação no aparelho e um guest virtual arm64. São produtos diferentes; o segundo requer VMM/backend, kernel/ramdisk de guest, dispositivos virtuais, HALs compatíveis e um teste de boot.
-4. Obter e compilar as fontes e blobs necessários respeitando licenças. Só então retirar o importador de outras ROMs e distribuir a LineageOS pré-carregada.
+1. Fazer checkout/build do LineageOS 23.2 e guardar o manifest com revisões exatas.
+2. Inspecionar o pacote UTM real e confirmar seu kernel, firmware, discos, config, boot e recursos.
+3. Compilar e integrar QEMU AArch64 system-mode com TCG, virtio, armazenamento gravável, rede, logs e bridge JNI.
+4. Implementar renderer de tela e toque/teclado, iniciar a VM e testar boot/persistência num host QEMU.
+5. Testar em Galaxy A07 4G somente após validar RAM, desempenho e ciclo de vida Android; não instalar uma GSI no aparelho como substituto do guest virtual.
 
-Não baixei nem incorporei uma imagem de terceiros porque não há compatibilidade demonstrada para este backend e para o aparelho-alvo.
+Este sandbox não atende aos requisitos oficiais de build AOSP: a documentação atual pede host x86-64, 400 GB de espaço livre e 64 GB de RAM; o sandbox é ARM64, tem ~35 GB livres e ~11 GiB RAM. Por isso, não foi produzida a ROM completa nesta sessão.
 
 ## Referências
 
-[1]: https://wiki.lineageos.org/devices/ "LineageOS Wiki — lista oficial de dispositivos"
-[2]: https://developer.android.com/topic/generic-system-image "Android Developers — Generic System Images (GSIs)"
-[3]: https://source.android.com/docs/core/virtualization/architecture "Android Open Source Project — AVF architecture"
-[4]: https://www.samsung.com/ae/business/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/ "Samsung — Galaxy A07 SM-A075F e suporte"
-[5]: https://download.lineageos.org/api/v1/devices "LineageOS — API oficial de dispositivos por versão"
-[6]: https://lineageos.org/Changelog-30/ "LineageOS — Android 16 lançado como versão 23.0"
-[7]: https://wiki.lineageos.org/gapps/ "LineageOS Wiki — Google Apps são add-on separado e não vêm na ROM"
-[8]: https://wiki.lineageos.org/faq.html "LineageOS Wiki — dispositivo fora da lista não é suportado"
+- [1]: https://wiki.lineageos.org/devices/ — lista oficial de dispositivos LineageOS.
+- [2]: https://developer.android.com/topic/generic-system-image — documentação Android sobre GSI.
+- [3]: https://source.android.com/docs/core/virtualization/architecture — arquitetura oficial AVF.
+- [4]: https://www.samsung.com/ae/business/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/ — Samsung Galaxy A07 SM-A075F.
+- [5]: https://download.lineageos.org/api/v1/devices — API oficial de dispositivos LineageOS.
+- [6]: https://lineageos.org/Changelog-30/ — LineageOS 23 baseada em Android 16.
+- [7]: https://wiki.lineageos.org/gapps/ — GApps são add-on separado.
+- [8]: https://wiki.lineageos.org/faq.html — política oficial sobre dispositivos não listados.
+- [9]: https://wiki.lineageos.org/libvirt-qemu — guia LineageOS libvirt/QEMU.
+- [10]: https://wiki.lineageos.org/utm-vm-on-apple-silicon-mac — guia LineageOS UTM ARM64.
+- [11]: https://source.android.com/docs/setup/start/requirements — requisitos oficiais para build AOSP.
