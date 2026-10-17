@@ -13,7 +13,7 @@ import java.util.Locale
 object ZyxRuntime {
     const val PRODUCT_NAME = "ZyX Virtual"
     const val GUEST_NAME = "ZyX OS"
-    const val VERSION = "0.2.0-alpha.1"
+    const val VERSION = "0.2.1-alpha.1"
 
     data class HostCapabilities(
         val abis: List<String>,

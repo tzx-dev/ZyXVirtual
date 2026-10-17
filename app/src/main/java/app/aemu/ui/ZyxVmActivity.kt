@@ -1,8 +1,12 @@
 package app.aemu.ui
 
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.res.ColorStateList
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
@@ -12,13 +16,18 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import app.aemu.R
 import app.aemu.core.ZyxOsPackageStore
 import app.aemu.core.ZyxOsVmStorage
 import app.aemu.core.ZyxQemuSystemProcess
+import java.io.File
+import java.io.RandomAccessFile
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -29,6 +38,34 @@ class ZyxVmActivity : ComponentActivity() {
     @Volatile private var session: ZyxQemuSystemProcess? = null
     @Volatile private var guestProcess: Process? = null
     private val closing = AtomicBoolean(false)
+    @Volatile private var qemuLogFile: File? = null
+    @Volatile private var pendingExportLog: File? = null
+    private val exportLogLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        val source = pendingExportLog
+        pendingExportLog = null
+        if (uri != null) {
+            if (source == null || !source.isFile) {
+                Toast.makeText(this, getString(R.string.log_export_failed), Toast.LENGTH_LONG).show()
+            } else {
+                thread(name = "zyx-qemu-log-export") {
+                    try {
+                        val copied = contentResolver.openOutputStream(uri)?.use { output ->
+                            source.inputStream().use { input -> input.copyTo(output) }
+                            true
+                        } ?: false
+                        runOnUiThread {
+                            val message = if (copied) getString(R.string.log_exported) else getString(R.string.log_export_failed)
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        runOnUiThread {
+                            Toast.makeText(this, getString(R.string.log_export_failed) + ": " + (e.localizedMessage ?: e.toString()), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     override fun attachBaseContext(base: Context) = super.attachBaseContext(app.aemu.AppPrefs.wrap(base))
 
@@ -54,6 +91,7 @@ class ZyxVmActivity : ComponentActivity() {
             setPadding(16, 10, 16, 10)
             background = ColorDrawable(0xcc151515.toInt())
             text = getString(R.string.zyx_vm_preparing)
+            isClickable = false
         }
         val statusLp = FrameLayout.LayoutParams(-1, -2, Gravity.TOP)
         statusLp.setMargins(16, 24, 16, 0)
@@ -67,12 +105,16 @@ class ZyxVmActivity : ComponentActivity() {
         }
         val reset = Button(this).apply {
             text = getString(R.string.zyx_vm_reset)
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(61, 90, 254))
+            setTextColor(Color.WHITE)
             setOnClickListener {
                 if (session?.requestReset() != true) showStatus("Não foi possível enviar o comando de reinício.")
             }
         }
         val stop = Button(this).apply {
             text = getString(R.string.zyx_vm_stop)
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(54, 54, 62))
+            setTextColor(Color.WHITE)
             setOnClickListener { stopAndFinish() }
         }
         controls.addView(reset, LinearLayout.LayoutParams(0, -2, 1f))
@@ -86,9 +128,13 @@ class ZyxVmActivity : ComponentActivity() {
                 if (connected) {
                     status.text = getString(R.string.zyx_vm_running)
                     status.visibility = View.GONE
+                    status.isClickable = false
+                    status.setOnClickListener(null)
                 } else if (!closing.get()) {
                     status.text = getString(R.string.zyx_vm_vnc_error, error ?: "conexão encerrada")
                     status.visibility = View.VISIBLE
+                    status.isClickable = qemuLogFile?.isFile == true
+                    status.setOnClickListener { showQemuLogDialog() }
                 }
             }
         }
@@ -104,6 +150,7 @@ class ZyxVmActivity : ComponentActivity() {
                 val installed = ZyxOsPackageStore(applicationContext).installed()
                     ?: throw IllegalStateException("Instale um pacote ZyX OS válido antes de iniciar a prévia.")
                 val config = ZyxOsVmStorage.prepare(installed)
+                qemuLogFile = File(config.serialLogPath).parentFile?.let { File(it, "qemu.log") }
                 val runner = ZyxQemuSystemProcess(applicationContext, config)
                 session = runner
                 val process = runner.start()
@@ -117,8 +164,10 @@ class ZyxVmActivity : ComponentActivity() {
                     val exitCode = runCatching { process.waitFor() }.getOrDefault(-1)
                     if (!closing.get()) {
                         runOnUiThread {
-                            status.text = "O processo QEMU foi encerrado (código $exitCode). Consulte qemu.log no armazenamento privado do app."
+                            status.text = getString(R.string.zyx_vm_exit_status, exitCode)
                             status.visibility = View.VISIBLE
+                            status.isClickable = qemuLogFile?.isFile == true
+                            status.setOnClickListener { showQemuLogDialog() }
                         }
                     }
                 }
@@ -126,6 +175,8 @@ class ZyxVmActivity : ComponentActivity() {
                 runOnUiThread {
                     status.text = getString(R.string.zyx_vm_vnc_error, t.localizedMessage ?: t.toString())
                     status.visibility = View.VISIBLE
+                    status.isClickable = qemuLogFile?.isFile == true
+                    status.setOnClickListener { showQemuLogDialog() }
                 }
             }
         }
@@ -136,6 +187,61 @@ class ZyxVmActivity : ComponentActivity() {
         runOnUiThread {
             status.text = message
             status.visibility = View.VISIBLE
+            status.isClickable = false
+            status.setOnClickListener(null)
+        }
+    }
+
+    private fun showQemuLogDialog() {
+        val source = qemuLogFile
+        thread(name = "zyx-qemu-log-read") {
+            val raw = source?.let { file ->
+                runCatching { readQemuLogTail(file) }.getOrElse { "Falha ao ler qemu.log: ${it.localizedMessage ?: it}" }
+            }.orEmpty()
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                val shownText = raw.ifBlank { getString(R.string.zyx_vm_log_empty) }
+                val textView = TextView(this).apply {
+                    text = shownText
+                    textSize = 13f
+                    typeface = Typeface.MONOSPACE
+                    setTextColor(Color.rgb(32, 32, 38))
+                    setTextIsSelectable(true)
+                    val inset = (16 * resources.displayMetrics.density).toInt()
+                    setPadding(inset, inset, inset, inset)
+                }
+                val scrollView = ScrollView(this).apply { addView(textView) }
+                val dialog = AlertDialog.Builder(this)
+                    .setTitle(R.string.zyx_vm_log_title)
+                    .setView(scrollView)
+                    .setNegativeButton(R.string.close, null)
+                    .setNeutralButton(R.string.log_copy) { _, _ ->
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.zyx_vm_log_title), shownText))
+                        Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+                    }
+                if (source?.isFile == true) {
+                    dialog.setPositiveButton(R.string.log_export) { _, _ ->
+                        pendingExportLog = source
+                        exportLogLauncher.launch("zyx-qemu-diagnostic.txt")
+                    }
+                }
+                dialog.show()
+            }
+        }
+    }
+
+    private fun readQemuLogTail(file: File): String {
+        if (!file.isFile) return ""
+        RandomAccessFile(file, "r").use { input ->
+            val length = input.length()
+            val count = minOf(length, 24L * 1024).toInt()
+            if (count == 0) return ""
+            input.seek(length - count)
+            val bytes = ByteArray(count)
+            input.readFully(bytes)
+            val tail = String(bytes, Charsets.UTF_8)
+            return if (length > count) "[Exibindo os últimos 24 KiB de qemu.log]\n\n$tail" else tail
         }
     }
 

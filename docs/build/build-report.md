@@ -1,37 +1,41 @@
-# Relatório de build — ZyX Virtual 0.2.0-alpha.1
+# Relatório de build — ZyX Virtual 0.2.1-alpha.1
 
-## Ambiente e comando
+## Ambiente e validação local
 
 Validação em 17/10/2026 no Sandbox ARM64 (`aarch64`), OpenJDK 21, Android SDK 36, Build Tools 36.0.0 e Gradle Wrapper 8.14.2. O Android Gradle Plugin fornece AAPT2 x86-64; o wrapper do projeto executa essa ferramenta de build no Sandbox ARM64. Isso não virtualiza o Android convidado.
 
 ```bash
-python3 scripts/prepare_qemu_runtime.py
+python3 app/l10n/gen.py
+python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
 scripts/check-engine-assets.sh
-scripts/build-apk.sh testStandardDebugUnitTest assembleStandardDebug
+scripts/build-apk.sh testStandardDebugUnitTest testCloneDebugUnitTest \
+  assembleStandardDebug assembleCloneDebug assembleStandardRelease
 ```
+
+Resultado: build Gradle `BUILD SUCCESSFUL`; 28 testes Kotlin no total entre standard e clone, sem falhas/erros/skips; testes Python do empacotador passaram. `py_compile`, validação sintática dos scripts Shell, `scripts/check-engine-assets.sh` e `git diff --check` também passaram. O preflight encontrou os 70 arquivos do runtime QEMU.
+
+## Mudanças da alpha
+
+- Nova home nativa Compose inspirada na hierarquia visual do site (hero em gradiente, cards de recursos, passos de uso, navegação inferior), com textos pt-BR e conteúdo ZyX atualizado; não copia marca, links nem alegações antigas do AEmulator.
+- A tela do guest usa controles com cor de marca. Ao encerrar, o aviso pode ser tocado para ler até 24 KiB finais de stdout/stderr do `qemu.log`; o usuário pode copiar o trecho ou exportar o arquivo por SAF. A exportação depende do destino escolhido e pode usar um provedor Drive se disponível.
+- O status de saída, inclusive código 1, não determina a causa. O app ainda não recebeu um `qemu.log` real do Galaxy A07, portanto nenhuma causa foi diagnosticada nesta versão.
 
 ## Runtime QEMU no APK
 
-O empacotador processou 94 pacotes ARM64 do repositório oficial Termux, fixados em `scripts/qemu-termux-runtime.lock.json`, com download total de 58,2 MiB. Cada `.deb` foi conferido por tamanho, metadados e SHA-256. A saída inclui QEMU 11.1.2 (29,5 MiB), 69 bibliotecas ELF requeridas (36,2 MiB) e avisos de licença localizados. A proveniência e os links estáveis da receita estão em [`../architecture/android-qemu-runtime-research.md`](../architecture/android-qemu-runtime-research.md).
+O empacotador processou 94 pacotes ARM64 do repositório oficial Termux, fixados em `scripts/qemu-termux-runtime.lock.json`, com download total de cerca de 58,2 MiB. Cada `.deb` foi conferido por tamanho, metadados e SHA-256. A saída inclui QEMU 11.1.2 e 69 bibliotecas ELF requeridas. Os 70 arquivos listados no `assets/zyx-qemu/runtime.json` foram empacotados; o runtime é extraído para armazenamento privado antes da execução. Esta inspeção valida o conteúdo do APK, não a execução do binário em aparelho físico.
 
-O APK foi inspecionado como ZIP: os 70 arquivos listados em `assets/zyx-qemu/runtime.json` existem e coincidem com os tamanhos e SHA-256 do manifesto; foram encontrados 92 avisos de licença. O runtime é extraído pelo app para armazenamento privado antes da execução. Isso valida o empacotamento, não a execução do binário em um Android físico.
+## Artefatos locais
 
-## Resultado local
+| Variante | Arquivo | Tamanho | SHA-256 |
+|---|---|---:|---|
+| Standard debug — candidato de distribuição | `app/build/outputs/apk/standard/debug/app-standard-debug.apk` | 68.531.909 bytes | `5754512b8f468077d16b38aaad03be1180f6b21f9fcc690019514bf732a61f70` |
+| Clone debug | `app/build/outputs/apk/clone/debug/app-clone-debug.apk` | 68.531.908 bytes | `9777d57724e7da8547c142da8ab900a328f60ff54a74e9bcbc758594b48e3206` |
+| Standard release unsigned | `app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk` | 60.786.645 bytes | `cafeeac8df2d8f8f9b7a88c506cd16a4184be57b4ff05cabd03a416d1b3bb35a` |
 
-`BUILD SUCCESSFUL`. Os 14 testes Kotlin passaram sem falhas, erros ou skips: `ZyxOsPackageTest` (4), `ZyxOsVmStorageTest` (3), `ZyxSystemCommandTest` (4) e `DeviceOtaProbeTest` (3). Os testes Python do empacotador passaram; `py_compile`, `sh -n`, o preflight `scripts/check-engine-assets.sh` e `git diff --check` também passaram. O APK AAPT2 reportou o pacote `app.zyx.virtual`; o `BuildConfig` compilado contém `VERSION_CODE = 102` e `VERSION_NAME = 0.2.0-alpha.1`.
+A variante standard usa `applicationId` `app.zyx.virtual`, `versionCode` 103 e `versionName` `0.2.1-alpha.1`. O APK debug é assinado com chave de desenvolvimento; o SHA-256 do certificado (`5ac363a525a32ebaaaf664e5445f039fd81fe3595c451d297c3196bfc3b964f5`) foi comparado com o APK da prerelease `v0.2.0-alpha.1` e coincide, permitindo atualização sobre essa instalação sem desinstalar. Não é certificado de produção.
 
-| Variante | Arquivo | Tamanho |
-|---|---|---:|
-| Standard debug, assinatura de desenvolvimento | `app/build/outputs/apk/standard/debug/app-standard-debug.apk` | 68.146.720 bytes (65,0 MiB) |
+## Limites e publicação
 
-SHA-256 do APK standard debug: `63721bf332012025f0d954ba723a13452e195d815deed04a10e52ba94d5b902d`.
+O build local não foi instalado ou executado em aparelho; `adb devices` não listou dispositivo. O comportamento do seletor SAF/Drive e a exportação do log ainda precisam de teste no Android físico. O APK não contém a ROM `.zyxos` e o bootstrap disponível ainda não recebeu o overlay ZyX. Não se afirma boot funcional no Galaxy A07.
 
-O APK foi compilado localmente; não foi instalado nem executado em telefone. Não há teste ADB do Galaxy A07. A CI do commit `79598db` passou em todas as etapas: [execução 39025191582](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39025191582). A prerelease pública [v0.2.0-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.0-alpha.1) foi publicada com este APK. O SHA-256 do certificado debug (`5ac363a525a32ebaaaf664e5445f039fd81fe3595c451d297c3196bfc3b964f5`) coincide com o asset público v0.1.1-alpha.1; portanto, o APK pode atualizar essa instalação sem desinstalar. Continua sendo chave debug, não assinatura de produção.
-
-## Guest e limites
-
-O app agora contém um caminho de boot process-based com QEMU system-mode ARM64, QMP, VNC local, controle básico de vídeo/entrada e cópias graváveis persistentes dos discos/NVRAM. Isso ainda não confirma que o APK inicialize o guest: não houve teste em aparelho e TCG pode ser lento no Helio G99. A bridge JNI permanece experimental e fora desse caminho.
-
-A ROM `lineage_zyx_virtual` ainda não foi compilada. O `.zyxos` disponível é apenas um bootstrap upstream da VM `lineage_virtio_arm64only`, com `customProductOverlayApplied: false`; a imagem interna continua upstream. No smoke test em QEMU de host com `-cpu max`, o guest chegou ao `init` e à descompressão de APEX, mas não confirmou zygote/framework após 300 segundos. A OTA `laurel_sprout` do Mi A3 é firmware de telefone e não foi usada. O build completo requer host Linux x86-64, 64 GiB de RAM efetiva e 400 GiB livres; este Sandbox ARM64 não atende aos requisitos.
-
-O pacote bootstrap foi enviado ao Drive privado e o tamanho/MD5 remoto conferem com o arquivo local. O APK não inclui a ROM; ela continua sendo selecionada separadamente pelo SAF.
+A validação de GitHub Actions e a publicação da prévia `v0.2.1-alpha.1` devem ser registradas aqui após a conclusão da CI e da release pública.
