@@ -20,7 +20,7 @@ No QEMU de host 8.2.2 com TCG e discos em snapshot, `-cpu cortex-a57` causou pan
 
 O boot continua desabilitado. Ainda faltam o adapter QEMU que implementa a ABI, o binário `aarch64-softmmu`/`libqemu-system-aarch64.so` construído para Android, integração JNI/NDK, renderer VNC/Surface e eventos de toque/teclado. O runtime precisa criar overlays graváveis para os discos de sistema/dados e uma cópia gravável das variáveis UEFI, mantendo os arquivos-base imutáveis. A imagem bootstrap ainda é upstream, não recebeu o overlay ZyX e não alcançou o framework no smoke test; também falta teste real no Galaxy A07.
 
-A sessão sandbox não tem credenciais do Google Drive; o pacote bootstrap permanece local e não foi enviado. No app, o provedor Drive pode ser aberto pelo seletor SAF quando o usuário está autenticado no aparelho. A compilação completa da árvore LineageOS também não foi executada: este sandbox ARM64 não tem os recursos de host necessários.
+O bootstrap foi enviado ao Drive privado; tamanho e MD5 no Drive conferem com o arquivo local. Ele não foi tornado público. No app, o provedor Drive pode ser aberto pelo seletor SAF quando o usuário está autenticado no aparelho. A compilação completa da árvore LineageOS também não foi executada: este sandbox ARM64 não tem os recursos de host necessários.
 
 ## Limites do host e referências
 

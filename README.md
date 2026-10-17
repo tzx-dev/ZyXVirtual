@@ -52,7 +52,7 @@ O preflight verifica Linux x86-64, pelo menos 64 GiB de RAM efetiva (considerand
 
 ## Google Drive
 
-No APK, o seletor Android permite abrir o provedor Google Drive se o usuário estiver autenticado no app Drive instalado no aparelho. Nesta sessão não foi encontrada uma conexão autenticada do Drive. Existe um `.zyxos` bootstrap local de 1,1 GB, mas ele não é o produto ZyX final e ainda não confirmou boot do framework; não foi enviado ao Drive.
+No APK, o seletor Android permite abrir o provedor Google Drive se o usuário estiver autenticado no app Drive instalado no aparelho. O bootstrap privado `ZyXOS-lineage-23.2-20260917-bootstrap-aavmf.zyxos` foi enviado ao Drive em 17/10/2026; tamanho e MD5 do arquivo remoto conferem com o artefato local. Ele continua sendo uma base upstream de desenvolvimento, não o produto ZyX final, e ainda não confirmou boot do framework.
 
 ## GitHub e licença
 

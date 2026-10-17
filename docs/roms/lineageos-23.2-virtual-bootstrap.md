@@ -4,7 +4,7 @@
 
 Foi preparado um pacote `.zyxos` de bootstrap para a etapa de integração do ZyX Virtual. Ele contém uma VM virtual ARM64 precompilada de LineageOS 23.2 / Android 16, mais firmware UEFI AAVMF. **Não é ainda um build final da ZyX OS:** a imagem interna continua sendo o produto upstream `lineage_virtio_arm64only`; o overlay `lineage_zyx_virtual` ainda não foi compilado ou aplicado dentro do guest. O nome ZyX e a identidade no manifesto identificam o pacote de desenvolvimento, não alteram o `build.prop`/framework da imagem upstream.
 
-O pacote local é `build/zyxos/ZyXOS-lineage-23.2-20260917-bootstrap-aavmf.zyxos` (SHA-256 `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`). Os oito arquivos declarados no manifesto foram lidos e verificados individualmente contra seus hashes. A estrutura não foi instalada ainda pelo app Android nem enviada ao Drive.
+O pacote local é `build/zyxos/ZyXOS-lineage-23.2-20260917-bootstrap-aavmf.zyxos` (SHA-256 `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`). Os oito arquivos declarados no manifesto foram lidos e verificados individualmente contra seus hashes. O arquivo foi enviado ao Drive privado com o mesmo nome; o tamanho e o MD5 retornados pelo Drive conferem com a cópia local. A estrutura ainda não foi instalada pelo app Android.
 
 O boot permanece desabilitado no app. O smoke test abaixo foi feito no QEMU de host do sandbox, não no APK nem no Galaxy A07. Ele chegou ao `init` do Android e à descompressão de APEX, mas ainda não confirmou zygote, framework ou interface Android completa.
 
