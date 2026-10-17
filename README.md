@@ -43,10 +43,12 @@ O APK debug fica em `app/build/outputs/apk/standard/debug/app-standard-debug.apk
 ## Build da ROM virtual
 
 ```bash
+mkdir -p /caminho/para/lineage-23.2
+scripts/check-zyx-build-host.sh /caminho/para/lineage-23.2
 LINEAGE_DIR=/caminho/para/lineage-23.2 scripts/build-zyx-guest.sh
 ```
 
-Este comando só pode produzir um `.zyxos` depois que existir uma árvore LineageOS 23.2 completa. A documentação AOSP atual pede host x86-64, 400 GB livres e 64 GB RAM; este sandbox tem ARM64, aproximadamente 35 GB livres e 15 GiB RAM total (cerca de 13 GiB disponíveis na medição atual). Não foi possível compilar a ROM completa aqui. Consulte `docs/architecture/qemu-system-and-build-constraints.md` e `docs/architecture/engine-refactor-status.md`.
+O preflight verifica Linux x86-64, pelo menos 64 GiB de RAM efetiva (considerando limites cgroup) e 400 GiB livres no filesystem de destino. O script de build repete essa verificação antes de copiar o overlay ou chamar o sistema de compilação. A ROM completa ainda não foi compilada nesta sessão. Consulte `docs/architecture/qemu-system-and-build-constraints.md` e `docs/architecture/engine-refactor-status.md`.
 
 ## Google Drive
 

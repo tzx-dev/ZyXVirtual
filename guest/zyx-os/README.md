@@ -13,10 +13,12 @@ O overlay em `device/zyx/zyx_virtual/` altera identidade, propriedades do produt
 ## Build
 
 ```bash
+mkdir -p /caminho/para/lineage-23.2
+scripts/check-zyx-build-host.sh /caminho/para/lineage-23.2
 LINEAGE_DIR=/caminho/para/lineage-23.2 scripts/build-zyx-guest.sh
 ```
 
-O script espera uma árvore `repo` LineageOS completa, instala o overlay sem sobrescrever diretório diferente, resolve as dependências declaradas, verifica o produto e executa `m vm-utm-zip`. Só empacota o `.zyxos` se o ZIP UTM real contiver `config.plist` e imagem de disco; escreve manifesto e SHA-256 dos arquivos.
+O preflight pode ser executado antes do checkout; verifica host Linux x86-64, pelo menos 64 GiB de RAM efetiva (incluindo limites cgroup) e 400 GiB livres. O script principal repete a validação antes de alterar a árvore. Com os recursos aprovados, ele espera uma árvore `repo` LineageOS completa, instala o overlay sem sobrescrever diretório diferente, resolve as dependências declaradas, verifica o produto e executa `m vm-utm-zip`. Só empacota o `.zyxos` se o ZIP UTM real contiver `config.plist` e imagem de disco; escreve manifesto e SHA-256 dos arquivos.
 
 **Estado:** o device tree e o pipeline estão preparados, mas esta sessão não tem uma árvore LineageOS completa e não produziu a imagem. AOSP documenta requisito de workstation x86-64, 400 GB livres e 64 GB de RAM. O sandbox atual é ARM64, com ~35 GB livres e 15 GiB de RAM total (cerca de 13 GiB disponíveis na medição atual). Portanto, não há `.zyxos` pronto para Drive nem boot a relatar.
 

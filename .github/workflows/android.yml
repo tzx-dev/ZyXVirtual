@@ -16,6 +16,12 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
+      - name: Validar scripts de build da ROM
+        run: |
+          sh -n scripts/check-zyx-build-host.sh
+          sh -n scripts/build-zyx-guest.sh
+          python3 -m py_compile scripts/package-zyx-guest.py
+          python3 -m json.tool guest/zyx-os/device/zyx/zyx_virtual/lineage.dependencies >/dev/null
       - name: Gerar e validar recursos pt-BR
         run: |
           python3 -m py_compile app/l10n/gen.py app/l10n/keys.py app/l10n/langs/en.py app/l10n/langs/pt-BR.py

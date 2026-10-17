@@ -24,6 +24,10 @@ if [ ! -f "$LINEAGE_DIR/build/envsetup.sh" ] || [ ! -d "$LINEAGE_DIR/.repo" ]; t
   echo "Build do ZyX OS bloqueado: $LINEAGE_DIR não é uma árvore LineageOS/repo completa." >&2
   exit 2
 fi
+if ! "$ROOT/scripts/check-zyx-build-host.sh" "$LINEAGE_DIR"; then
+  echo "Build do ZyX OS bloqueado antes de alterar a árvore ou iniciar m." >&2
+  exit 2
+fi
 if [ ! -f "$OVERLAY_SOURCE/AndroidProducts.mk" ] || [ ! -f "$OVERLAY_SOURCE/lineage.dependencies" ]; then
   echo "Build do ZyX OS bloqueado: overlay ZyX incompleto." >&2
   exit 2
