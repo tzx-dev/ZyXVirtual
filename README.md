@@ -54,4 +54,4 @@ No APK, o seletor Android permite abrir o provedor Google Drive se o usuário es
 
 ## GitHub e licença
 
-O código ZyX está no repositório GitHub `tzx-dev/ZyXVirtual`, atualmente público; a CI Android grava APKs como artefatos de workflow. Os componentes herdados e de terceiros mantêm as licenças próprias. O snapshot local de auditoria não é duplicado como diretório upstream.
+O código ZyX está no repositório GitHub `tzx-dev/ZyXVirtual`, atualmente público; a CI Android grava APKs como artefatos de workflow. A primeira prévia pública [`v0.1.1-alpha.1`](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.1.1-alpha.1) contém somente o APK debug do aplicativo — **não inclui a ROM `.zyxos` e não inicializa o Android convidado**. Os componentes herdados e de terceiros mantêm as licenças próprias. O snapshot local de auditoria não é duplicado como diretório upstream.

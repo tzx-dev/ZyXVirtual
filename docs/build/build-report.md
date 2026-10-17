@@ -18,7 +18,7 @@ scripts/build-apk.sh \
 
 Resultado: `BUILD SUCCESSFUL`. Os testes unitários tiveram **10 testes, 0 falhas, 0 erros e 0 ignorados**: `DeviceOtaProbeTest` (3), `ZyxOsPackageTest` (4) e `ZyxSystemCommandTest` (3). O gerador pt-BR foi executado e os recursos padrão e `values-pt-rBR` foram comparados: 197 strings sincronizadas; `app_name` permanece corretamente não traduzível. A bridge JNI C também passou anteriormente em checagem de sintaxe no host; scripts Shell, Python, manifesto JSON e XML passaram por validação estática.
 
-O APK standard debug foi verificado com `apksigner`; a assinatura V2 de desenvolvimento é válida. O APK release é unsigned porque não há keystore de publicação. A CI foi atualizada localmente para validar a sincronização das traduções e a sintaxe C antes da compilação; essa alteração ainda não foi publicada nem executada no GitHub.
+O APK standard debug foi verificado com `apksigner`; a assinatura V2 de desenvolvimento é válida. O APK release é unsigned porque não há keystore de publicação. A CI do GitHub validou sincronização das traduções, sintaxe C e compilação Android com sucesso no commit `8c9951f` ([execução 39017408540](https://github.com/tzx-dev/ZyXVirtual/actions/runs/39017408540)).
 
 ## APKs gerados
 
@@ -30,7 +30,7 @@ O APK standard debug foi verificado com `apksigner`; a assinatura V2 de desenvol
 
 SHA-256 do APK standard debug: `fa3d9f77147f4062e43341ddb8f74b1cfe439c0d0b9dece7332457011d43f59e`.
 
-A versão compilada é `0.1.1-alpha.1` (`versionCode` 101), com `applicationId` `app.zyx.virtual`, ABI `arm64-v8a` e `minSdk` 26. O APK é uma compilação de depuração; não é assinado para publicação comercial. A candidata local ainda não foi publicada como GitHub Release. Consulte [as notas da candidata](../releases/v0.1.1-alpha.1.md).
+A versão compilada é `0.1.1-alpha.1` (`versionCode` 101), com `applicationId` `app.zyx.virtual`, ABI `arm64-v8a` e `minSdk` 26. O APK é uma compilação de depuração; não é assinado para publicação comercial. A versão foi publicada como [pré-lançamento público v0.1.1-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.1.1-alpha.1), contendo o APK standard debug. Consulte [as notas da release](../releases/v0.1.1-alpha.1.md).
 
 Não instalei o APK nem testei em telefone físico; não há aparelho ADB conectado. O Galaxy A07 não foi validado.
 
