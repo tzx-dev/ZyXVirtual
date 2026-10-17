@@ -12,9 +12,9 @@ tools/aapt2
 .idea/
 *.iml
 /dist/
+/artifacts/lineageos/
 .claude/
 __pycache__/
-
 # ключи подписи — никогда не в репозиторий
 keystore/
 keystore.properties
