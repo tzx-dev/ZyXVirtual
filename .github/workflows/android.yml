@@ -21,6 +21,7 @@ jobs:
           sh -n scripts/check-zyx-build-host.sh
           sh -n scripts/build-zyx-guest.sh
           python3 -m py_compile scripts/package-zyx-guest.py
+          python3 -m unittest discover -s scripts/tests -p 'test_*.py'
           python3 -m json.tool guest/zyx-os/device/zyx/zyx_virtual/lineage.dependencies >/dev/null
       - name: Gerar e validar recursos pt-BR
         run: |

@@ -14,6 +14,8 @@ Verificação em 17/10/2026. Selecionada a versão **23.2 baseada no Android 16*
 A cópia baixada para este workspace fica em `artifacts/lineageos/mi-a3/`. O ZIP está fora do Git por ser grande; o código e este registro permanecem versionados.
 Download concluído: tamanho conferido em 1.169.332.586 bytes, SHA-256 comparado com o catálogo oficial e teste de integridade ZIP aprovado.
 
+A inspeção do payload e das imagens extraídas está em [mi-a3-ota-extraction-analysis.md](mi-a3-ota-extraction-analysis.md). A extração fica em `build/rom-inspection/mi-a3-20261006/` e não é incluída no Git.
+
 **Limite de compatibilidade:** esta ROM é construída para o hardware Xiaomi Mi A3. Não é uma imagem genérica para o Galaxy A07 nem um guest pronto para o motor QEMU user-mode ARM32 do ZyX Virtual. Não foi instalada nem gravada em telefone.
 
 ## Referências

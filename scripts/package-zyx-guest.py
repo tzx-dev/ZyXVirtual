@@ -37,7 +37,14 @@ def build_manifest(source: Path, branch: str, product: str, build_id: str) -> di
     items = []
     seen = set()
     with zipfile.ZipFile(source, "r") as archive:
-        for info in archive.infolist():
+        infos = archive.infolist()
+        names = {info.filename for info in infos}
+        if "META-INF/com/android/metadata" in names and "payload.bin" in names:
+            raise ValueError(
+                "o arquivo é uma OTA Android para dispositivo físico; "
+                "ZyX OS exige o ZIP vm-utm-zip do produto virtual"
+            )
+        for info in infos:
             if info.is_dir():
                 continue
             validate_name(info.filename)
