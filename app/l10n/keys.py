@@ -42,4 +42,12 @@ KEYS = [
     'zyx_os_progress',
     'zyx_os_install_failed',
     'zyx_os_verifying',
+    'zyx_os_boot_ready',
+    'zyx_os_start_preview',
+    'zyx_vm_preparing',
+    'zyx_vm_connecting',
+    'zyx_vm_running',
+    'zyx_vm_vnc_error',
+    'zyx_vm_stop',
+    'zyx_vm_reset',
 ]

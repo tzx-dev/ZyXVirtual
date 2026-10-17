@@ -4,9 +4,9 @@
 
 Foi preparado um pacote `.zyxos` de bootstrap para a etapa de integração do ZyX Virtual. Ele contém uma VM virtual ARM64 precompilada de LineageOS 23.2 / Android 16, mais firmware UEFI AAVMF. **Não é ainda um build final da ZyX OS:** a imagem interna continua sendo o produto upstream `lineage_virtio_arm64only`; o overlay `lineage_zyx_virtual` ainda não foi compilado ou aplicado dentro do guest. O nome ZyX e a identidade no manifesto identificam o pacote de desenvolvimento, não alteram o `build.prop`/framework da imagem upstream.
 
-O pacote local é `build/zyxos/ZyXOS-lineage-23.2-20260917-bootstrap-aavmf.zyxos` (SHA-256 `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`). Os oito arquivos declarados no manifesto foram lidos e verificados individualmente contra seus hashes. O arquivo foi enviado ao Drive privado com o mesmo nome; o tamanho e o MD5 retornados pelo Drive conferem com a cópia local. A estrutura ainda não foi instalada pelo app Android.
+O pacote local é `build/zyxos/ZyXOS-lineage-23.2-20260917-bootstrap-aavmf.zyxos` (SHA-256 `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`). Os oito arquivos declarados no manifesto foram lidos e verificados individualmente contra seus hashes. O arquivo foi enviado ao Drive privado com o mesmo nome; tamanho e MD5 retornados pelo Drive conferem com a cópia local. O APK `0.2.0-alpha.1` já contém o caminho experimental de instalação/boot, mas ainda não há prova de que o pacote tenha sido instalado ou inicializado em Android físico.
 
-O boot permanece desabilitado no app. O smoke test abaixo foi feito no QEMU de host do sandbox, não no APK nem no Galaxy A07. Ele chegou ao `init` do Android e à descompressão de APEX, mas ainda não confirmou zygote, framework ou interface Android completa.
+O caminho de boot do app foi integrado em desenvolvimento, mas ainda não foi executado no APK em aparelho. O smoke test abaixo foi feito no QEMU de host do sandbox, não no Galaxy A07. Ele chegou ao `init` do Android e à descompressão de APEX, mas ainda não confirmou zygote, framework ou interface Android completa.
 
 ## Origem da imagem
 
@@ -55,10 +55,10 @@ Este resultado demonstra progresso real de boot do guest em QEMU, mas não prova
 
 ## Bloqueios que continuam
 
-1. Compilar e integrar o QEMU `aarch64-softmmu` para Android, mais o adapter que implemente a ABI `zyx_qemu_get_api` consumida pela JNI.
-2. Provisionar cópias graváveis/overlays persistentes para `vda`, `vdb` e NVRAM, mantendo os arquivos verificados do pacote como base imutável.
-3. Integrar display VNC/Surface, vídeo, toque e entrada ao app.
-4. Fazer o produto/overlay ZyX ser aplicado no build guest — o bootstrap atual não recebeu esse overlay.
-5. Repetir o boot até o framework e validar no Galaxy A07; só então retirar o estado “boot desabilitado”.
+1. Executar o APK no Galaxy A07 e validar que o binário Android-linkado inicia, que o VNC mostra o framebuffer, que toque/teclado/QMP funcionam e que os discos/NVRAM persistem após reiniciar.
+2. Medir RAM, temperatura e desempenho TCG no Helio G99. A configuração atual usa TCG; KVM não foi confirmado no aparelho.
+3. Fazer o guest alcançar zygote/framework. O smoke test de host parou antes desse marco, então a integração de app ainda não equivale a um Android inicializado.
+4. Aplicar e compilar o overlay `lineage_zyx_virtual` dentro de uma árvore LineageOS completa; o bootstrap continua sendo upstream `lineage_virtio_arm64only`.
+5. Preparar assinatura de produção e assinatura criptográfica do manifesto antes de distribuir um pacote como autenticado.
 
-A compilação completa da árvore LineageOS não foi executada nesta etapa. O pacote é um bootstrap de engenharia e não deve ser publicado como ROM final.
+A compilação completa da árvore LineageOS não foi executada nesta etapa. O pacote é um bootstrap de engenharia e não deve ser publicado como ROM ZyX final. A bridge JNI documentada neste diretório é experimental e não é usada pelo launcher process-based atual.

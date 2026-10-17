@@ -50,6 +50,16 @@
             android:screenOrientation="unspecified"
             android:theme="@style/Theme.AEmulator.Vm" />
 
+        <activity
+            android:name=".ui.ZyxVmActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|navigation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:process=":zyxvm"
+            android:resizeableActivity="true"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.AEmulator.Vm" />
+
         <service
             android:name=".core.Keeper"
             android:exported="false"

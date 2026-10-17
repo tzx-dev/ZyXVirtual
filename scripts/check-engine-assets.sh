@@ -32,10 +32,13 @@ for file in "$ROOT/native/qemu-system/zyx_qemu_api.h" "$ROOT/native/qemu-system/
   fi
 done
 
-if [ -f "$JNI/libzyx-qemu-jni.so" ] && [ -f "$JNI/libqemu-system-aarch64.so" ]; then
-  echo "PRESENT: JNI/QEMU libraries exist; ABI symbol and runtime boot still require separate validation."
+RUNTIME="$ROOT/app/build/generated/zyx-qemu-runtime/assets/zyx-qemu"
+if [ -s "$RUNTIME/runtime.json" ] && [ -x "$RUNTIME/bin/qemu-system-aarch64" ]; then
+  printf 'PRESENT: QEMU system-mode ARM64 runtime assets generated (%s files). Boot on Galaxy A07 remains untested.\n' \
+    "$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["files"]))' "$RUNTIME/runtime.json")"
 else
-  echo "PENDING: JNI/QEMU system-mode libraries are not both packaged; Android 16 boot is unavailable."
+  echo "MISSING: execute python3 scripts/prepare_qemu_runtime.py to generate the pinned QEMU ARM64 runtime assets." >&2
+  fail=1
 fi
 
 exit "$fail"

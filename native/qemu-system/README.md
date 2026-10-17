@@ -1,19 +1,16 @@
-# ZyX QEMU system-mode JNI boundary
+# Bridge JNI/QEMU system-mode — interface experimental
 
-`zyx_qemu_api.h` define uma ABI pública versionada entre a aplicação e uma futura biblioteca QEMU AArch64 system-mode. `zyx_qemu_jni.c` carrega a biblioteca por `dlopen`, resolve `zyx_qemu_get_api`, serializa argumentos sem shell, executa a VM numa thread chamadora e expõe stop/reset/estado. O nome do símbolo é deliberadamente específico do ZyX: se uma biblioteca QEMU não implementar a ABI, a inicialização é recusada em vez de procurar assinaturas internas instáveis.
+A ABI versionada de `zyx_qemu_api.h`, a bridge C `zyx_qemu_jni.c` e o wrapper `ZyxQemuSystemBridge.kt` foram preparados como uma fronteira nativa possível para trabalho futuro. A bridge usa `dlopen`, procura o símbolo ZyX `zyx_qemu_get_api`, passa argumentos sem shell e expõe stop/reset/estado. Ela recusa inicialização se o backend não implementar a ABI explicitamente.
 
-`app/src/main/java/app/aemu/core/ZyxQemuSystemBridge.kt` é o wrapper Kotlin. `scripts/build-zyx-qemu-jni.sh` compila somente `libzyx-qemu-jni.so` com Android NDK e instala o binário local em `app/src/main/jniLibs/arm64-v8a/`. Isso **não** compila QEMU, não fornece o adaptador que implementa `zyx_qemu_get_api` e não produz `libqemu-system-aarch64.so`.
+## Backend atualmente usado pelo app
 
-## Estado
+O caminho de boot de desenvolvimento **não usa esta bridge JNI**. O APK `0.2.0-alpha.1` empacota QEMU 11.1.2 system-mode ARM64 e dependências como assets (preparados por `scripts/prepare_qemu_runtime.py`). `ZyxQemuAssetRuntime` verifica e extrai os arquivos para armazenamento privado; `ZyxQemuSystemProcess` inicia o executável por `ProcessBuilder`; `ZyxVmActivity` apresenta o framebuffer via VNC local; `ZyxOsVmStorage` prepara discos e NVRAM persistentes. A inicialização desse fluxo ainda não foi validada em aparelho físico.
 
-- Código de interface JNI e ABI versionada: presente.
-- Compilação Android NDK: ainda não verificada nesta sessão (NDK Android não está instalado no sandbox ARM64).
-- Implementação QEMU-side do ABI: ausente.
-- Biblioteca QEMU `aarch64-softmmu` para Android: ausente.
-- Display VNC/SDL e eventos touch/keyboard: ausentes.
+## Estado desta bridge
 
-Por isso `ZyxRuntime` verifica as duas bibliotecas no APK e mostra “não empacotado; boot desabilitado”. Não marque essas peças como funcionais até compilar e validar o ciclo de start/stop/reset em aparelho.
+- ABI e fonte C: presentes, sintaxe C verificada na CI.
+- Build Android NDK da bridge: não executado nesta sessão.
+- Adapter QEMU que implemente `zyx_qemu_get_api`: ausente.
+- O launcher process-based atual não requer a bridge nem o adapter.
 
-## Contrato de integração posterior
-
-O adapter QEMU deve receber `argc/argv` e delegar a uma versão fixada do QEMU, expor shutdown/reset e terminar o loop antes da biblioteca ser descarregada. Os argumentos e armazenamento não podem vir de shell. QMP/VNC devem estar vinculados a loopback/socket Unix privado. O backend também deve criar um disco gravável separado da base verificada do pacote ZyXOS, registrar a licença e disponibilizar o código fonte correspondente.
+`scripts/build-zyx-qemu-jni.sh` compila somente `libzyx-qemu-jni.so` e não compila QEMU. Não inclua a bridge no estado de runtime ativo até existir um adapter completo e teste de start/stop/reset. Para o estado completo do motor, consulte [`../../docs/architecture/engine-refactor-status.md`](../../docs/architecture/engine-refactor-status.md).

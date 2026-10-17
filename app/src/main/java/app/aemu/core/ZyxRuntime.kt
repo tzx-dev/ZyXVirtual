@@ -13,7 +13,7 @@ import java.util.Locale
 object ZyxRuntime {
     const val PRODUCT_NAME = "ZyX Virtual"
     const val GUEST_NAME = "ZyX OS"
-    const val VERSION = "0.1.0-dev"
+    const val VERSION = "0.2.0-alpha.1"
 
     data class HostCapabilities(
         val abis: List<String>,
@@ -36,17 +36,17 @@ object ZyxRuntime {
             memoryMb = (memory.totalMem / (1024L * 1024L)).toInt().coerceAtLeast(0),
             gpu = HostInfo.gpu().ifBlank { "desconhecida" },
             kvmDevice = File("/dev/kvm").let { it.exists() && it.canRead() },
-            qemuSystemBundled = ZyxQemuSystemBridge.isAvailable(ctx),
+            qemuSystemBundled = ZyxQemuSystemProcess.isAvailable(ctx),
         )
     }
 
     fun diagnostics(ctx: Context): String {
         val h = probe(ctx)
         val abi = h.abis.ifEmpty { listOf("desconhecida") }.joinToString(", ")
-        val backend = if (h.kvmDevice) {
-            "KVM exposto pelo host; o backend atual ainda usa QEMU user-mode"
+        val backend = if (h.qemuSystemBundled) {
+            "QEMU system-mode ARM64 disponível; a configuração atual usa TCG"
         } else {
-            "QEMU user-mode; /dev/kvm não está acessível ao app"
+            "QEMU user-mode ARM32 legado; /dev/kvm não substitui o motor system-mode ausente"
         }
         return buildString {
             append("ZyX Virtual ").append(VERSION).append('\n')
@@ -54,7 +54,7 @@ object ZyxRuntime {
             append("CPU: ").append(h.cpuCount).append(" threads · RAM ").append(h.memoryMb).append(" MB\n")
             append("GPU: ").append(h.gpu).append('\n')
             append("Backend legado: ").append(backend).append('\n')
-            append("QEMU system-mode arm64: ").append(if (h.qemuSystemBundled) "bibliotecas presentes" else "não empacotado; boot desabilitado")
+            append("QEMU system-mode ARM64: ").append(if (h.qemuSystemBundled) "executável Android presente" else "executável Android não empacotado; boot indisponível")
         }
     }
 

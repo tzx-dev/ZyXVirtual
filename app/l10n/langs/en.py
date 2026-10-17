@@ -196,4 +196,12 @@ S = {
     'zyx_os_progress': "Transferred %1$s of %2$s",
     'zyx_os_install_failed': "Failed to install the ZyX OS package",
     'zyx_os_verifying': "Verifying files and hashes…",
+    'zyx_os_boot_ready': "The Android QEMU system-mode runtime is available. This package is still an upstream base; the ZyX overlay is pending.",
+    'zyx_os_start_preview': "Start preview",
+    'zyx_vm_preparing': "Preparing the virtual system…",
+    'zyx_vm_connecting': "Connecting to the VM display…",
+    'zyx_vm_running': "System running",
+    'zyx_vm_vnc_error': "Could not connect to the display: %1$s",
+    'zyx_vm_stop': "Shut down",
+    'zyx_vm_reset': "Reset VM",
 }

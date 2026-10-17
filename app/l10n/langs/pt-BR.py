@@ -196,4 +196,12 @@ S = {
     'zyx_os_progress': "Transferidos %1$s de %2$s",
     'zyx_os_install_failed': "Falha ao instalar o pacote ZyX OS",
     'zyx_os_verifying': "Verificando arquivos e hashes…",
+    'zyx_os_boot_ready': "O motor QEMU system-mode Android está disponível. Este pacote ainda é uma base upstream; o overlay ZyX está pendente.",
+    'zyx_os_start_preview': "Iniciar prévia",
+    'zyx_vm_preparing': "Preparando o sistema virtual…",
+    'zyx_vm_connecting': "Conectando ao vídeo da VM…",
+    'zyx_vm_running': "Sistema em execução",
+    'zyx_vm_vnc_error': "Não foi possível conectar ao vídeo: %1$s",
+    'zyx_vm_stop': "Desligar",
+    'zyx_vm_reset': "Reiniciar VM",
 }

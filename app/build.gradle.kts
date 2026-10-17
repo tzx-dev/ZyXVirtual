@@ -22,8 +22,8 @@ android {
         // 28: гостевые бинарники запускаются из каталога данных приложения (W^X для targetSdk>=29)
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
-        versionCode = 101
-        versionName = "0.1.1-alpha.1"
+        versionCode = 102
+        versionName = "0.2.0-alpha.1"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
@@ -61,8 +61,14 @@ android {
     }
 
     packaging {
-        // исполняемые файлы движка лежат как lib*.so и должны распаковываться на диск
+        // Библиотеки legacy-движка извлекаются в nativeLibraryDir.
         jniLibs { useLegacyPackaging = true }
+    }
+
+    sourceSets {
+        getByName("main") {
+            assets.srcDir(layout.buildDirectory.dir("generated/zyx-qemu-runtime/assets"))
+        }
     }
 
     androidResources {

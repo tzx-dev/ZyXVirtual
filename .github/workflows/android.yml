@@ -16,11 +16,17 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
+      - name: Cache dos pacotes QEMU Termux fixados
+        uses: actions/cache@v4
+        with:
+          path: build/qemu-termux-runtime/packages
+          key: qemu-termux-1.11.2-${{ hashFiles('scripts/qemu-termux-runtime.lock.json') }}
       - name: Validar scripts de build da ROM
         run: |
           sh -n scripts/check-zyx-build-host.sh
           sh -n scripts/build-zyx-guest.sh
-          python3 -m py_compile scripts/package-zyx-guest.py
+          sh -n scripts/check-engine-assets.sh
+          python3 -m py_compile scripts/package-zyx-guest.py scripts/prepare_qemu_runtime.py
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
           python3 -m json.tool guest/zyx-os/device/zyx/zyx_virtual/lineage.dependencies >/dev/null
       - name: Gerar e validar recursos pt-BR
@@ -39,6 +45,10 @@ jobs:
           packages: ''
       - name: Instalar plataforma e ferramentas Android
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Preparar runtime QEMU system-mode ARM64
+        run: python3 scripts/prepare_qemu_runtime.py
+      - name: Validar assets do engine
+        run: sh scripts/check-engine-assets.sh
       - name: Validar sintaxe da bridge JNI
         run: gcc -std=c11 -Wall -Wextra -Werror -fsyntax-only -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -Inative/qemu-system native/qemu-system/zyx_qemu_jni.c
       - name: Compilar APKs ZyX

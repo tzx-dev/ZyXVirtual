@@ -198,4 +198,12 @@
     <string name="zyx_os_progress">Transferidos %1$s de %2$s</string>
     <string name="zyx_os_install_failed">Falha ao instalar o pacote ZyX OS</string>
     <string name="zyx_os_verifying">Verificando arquivos e hashes…</string>
+    <string name="zyx_os_boot_ready">O motor QEMU system-mode Android está disponível. Este pacote ainda é uma base upstream; o overlay ZyX está pendente.</string>
+    <string name="zyx_os_start_preview">Iniciar prévia</string>
+    <string name="zyx_vm_preparing">Preparando o sistema virtual…</string>
+    <string name="zyx_vm_connecting">Conectando ao vídeo da VM…</string>
+    <string name="zyx_vm_running">Sistema em execução</string>
+    <string name="zyx_vm_vnc_error">Não foi possível conectar ao vídeo: %1$s</string>
+    <string name="zyx_vm_stop">Desligar</string>
+    <string name="zyx_vm_reset">Reiniciar VM</string>
 </resources>

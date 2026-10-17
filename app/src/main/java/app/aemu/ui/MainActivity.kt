@@ -93,6 +93,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.rounded.Settings
 import android.content.Context
 import app.aemu.core.ZyxRuntime
+import app.aemu.core.ZyxQemuSystemProcess
 
 
 class MainActivity : ComponentActivity() {
@@ -219,7 +220,14 @@ fun Library(model: LibraryModel) {
                 }
             }
             packageState.installed?.let { installed ->
-                item { ZyxOsPackageCard(installed, onRemove = { confirmRemove = true }) }
+                item {
+                    ZyxOsPackageCard(
+                        installed = installed,
+                        qemuAvailable = ZyxQemuSystemProcess.isAvailable(ctx),
+                        onBoot = { ctx.startActivity(Intent(ctx, ZyxVmActivity::class.java)) },
+                        onRemove = { confirmRemove = true },
+                    )
+                }
             }
         }
     }
@@ -255,7 +263,12 @@ fun Library(model: LibraryModel) {
 }
 
 @Composable
-private fun ZyxOsPackageCard(installed: app.aemu.core.InstalledZyxOs, onRemove: () -> Unit) {
+private fun ZyxOsPackageCard(
+    installed: app.aemu.core.InstalledZyxOs,
+    qemuAvailable: Boolean,
+    onBoot: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val ctx = LocalContext.current
     Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -268,15 +281,20 @@ private fun ZyxOsPackageCard(installed: app.aemu.core.InstalledZyxOs, onRemove: 
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.zyx_os_installed), style = MaterialTheme.typography.titleLarge)
-                    Text(stringResource(R.string.zyx_os_build), style = MaterialTheme.typography.bodyMedium,
+                    Text(installed.manifest.displayName, style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Text(stringResource(R.string.zyx_os_size, Formatter.formatShortFileSize(ctx, installed.payloadSizeBytes)),
                 style = MaterialTheme.typography.bodySmall)
             Text(stringResource(R.string.zyx_os_build_id, installed.manifest.buildId), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.zyx_os_boot_unavailable), style = MaterialTheme.typography.bodyMedium,
+            Text(stringResource(if (qemuAvailable) R.string.zyx_os_boot_ready else R.string.zyx_os_boot_unavailable), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.tertiary)
+            if (qemuAvailable) {
+                Button(onClick = onBoot, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.zyx_os_start_preview))
+                }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onRemove) { Text(stringResource(R.string.zyx_os_remove)) }
             }

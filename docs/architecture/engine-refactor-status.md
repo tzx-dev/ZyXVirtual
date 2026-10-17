@@ -1,27 +1,30 @@
 # Estado da refatoração do motor ZyX
 
-O objetivo é executar Android full-system ARM64, não simular uma tela. O AEmulator original executa QEMU user-mode para guests ARM32 e não contém VMM, kernel ARM64 virtual ou Android 16. A OTA física `laurel_sprout` do Mi A3 não é guest utilizável. Para avançar sem compilar a árvore LineageOS completa, foi incorporada uma base virtual upstream `virtio_arm64only` como bootstrap de engenharia.
+## Alvo e estado da ROM
 
-## O que está preparado
+O objetivo é executar Android full-system ARM64, não simular uma tela. O AEmulator original usa QEMU user-mode para guests ARM32. O produto-alvo é `lineage_zyx_virtual`, baseado em LineageOS 23.2 / Android 16 e no alvo virtual `virtio_arm64only`, sem Google Apps. O overlay existe, mas ainda não foi compilado/aplicado dentro da imagem. O pacote `.zyxos` local é um bootstrap de uma VM upstream `lineage_virtio_arm64only`; o nome ZyX no manifesto não altera a identidade do Android interno.
 
-O produto-alvo é `lineage_zyx_virtual`, baseado em LineageOS 23.2 / Android 16 para `virtio_arm64only`, sem Google Apps. O overlay ZyX existe no repositório, mas ainda não foi compilado dentro da imagem bootstrap. Foi gerado localmente um pacote `.zyxos` a partir de uma VM UTM/QEMU upstream precompilada, com dois QCOW2, manifesto, hashes por arquivo e firmware AAVMF com avisos de licença. O pacote marca `customProductOverlayApplied: false`; seu nome ZyX no manifesto não altera a identidade do Android interno.
+A OTA física `laurel_sprout` do Mi A3 não é uma imagem de VM e não foi usada. No QEMU de host 8.2.2 com TCG, o bootstrap avançou pelo kernel, Android `init` e descompressão dos APEX; após 300 segundos não houve confirmação de zygote/framework. Isso não prova boot completo.
 
-`ZyxSystemCommand` constrói argumentos QEMU AArch64 system-mode para `virt`, TCG, CPU `max`, virtio, dois discos, UEFI pflash, VNC local e QMP. A ordem de boot prioriza explicitamente `vda`; `vdb` é secundário. O dispositivo de rede virtio continua habilitado sem Option ROM PXE. A ABI `zyx_qemu_get_api`, a bridge JNI C e o wrapper Kotlin existem, mas a bridge ainda não foi compilada com NDK nem ligada a um backend QEMU.
+## Integração implementada no app `0.2.0-alpha.1`
 
-## Validações desta revisão
+- `scripts/prepare_qemu_runtime.py` baixa e verifica 94 pacotes Termux ARM64 do lockfile por SHA-256, extrai somente o executável QEMU 11.1.2 e sua closure ELF, e preserva avisos de licença. O runtime gerado contém 70 arquivos no manifesto: executável (29,5 MiB) e 69 bibliotecas (36,2 MiB).
+- `ZyxQemuAssetRuntime` lê o manifesto do APK, copia o runtime para armazenamento privado executável e verifica tamanho e SHA-256 de cada asset antes de iniciar. O APK debug foi aberto como ZIP e todos os hashes foram recalculados com sucesso.
+- `ZyxQemuSystemProcess` inicia QEMU como processo ARM64 com `ProcessBuilder`, configura `LD_LIBRARY_PATH` para as bibliotecas privadas, monitora o processo e usa QMP para stop/reset. A linha de comando `ZyxSystemCommand` usa `virt`, TCG multi-thread, CPU `max`, discos virtio, firmware AAVMF, rede e VNC loopback.
+- `ZyxOsVmStorage` resolve os caminhos do manifesto, valida os hashes das bases e provisiona cópias graváveis persistentes de `vda`, `vdb` e das variáveis UEFI. As imagens do pacote permanecem intactas.
+- `ZyxVmActivity` é a tela dedicada do guest; `ZyxVncView` implementa o protocolo RFB básico de VNC, vídeo raw, toque e teclas. A tela principal só oferece a prévia se o manifesto do runtime estiver no APK.
+- O caminho ativo é process-based, não JNI. A ABI/bridge C e o wrapper Kotlin mantidos em `native/qemu-system/` são experimentais e não são usados pelo launcher atual.
 
-` scripts/build-apk.sh testStandardDebugUnitTest assembleStandardDebug` concluiu com sucesso usando o wrapper AAPT2/QEMU do projeto. Passaram 11 testes Kotlin (4 de pacote ZyX, 4 de comando system-mode e 3 de DeviceOtaProbe), e o APK standard debug foi gerado. O hash do APK atual está no `docs/build/build-report.md`. Os testes Python do empacotador passaram 2/2; `py_compile`, `sh -n` dos scripts e `git diff --check` também passaram.
+## Validação local
 
-O pacote `.zyxos` local foi relido integralmente: os oito arquivos e seus SHA-256 conferem com `ZYX-MANIFEST.json`. Seu SHA-256 externo é `9d5643729dff4bdf7ad489ec48bb7718702db49c4eab01659cae9ece9eae6247`. O arquivo de 1,1 GB está em `build/zyxos/` e é um bootstrap upstream, não o produto ZyX final.
+O APK standard debug foi compilado como `0.2.0-alpha.1` (`versionCode` 102), com 68.146.720 bytes e SHA-256 `63721bf332012025f0d954ba723a13452e195d815deed04a10e52ba94d5b902d`. A suíte local passou em 14 testes Kotlin (4 de pacote, 3 de armazenamento, 4 de comando e 3 de detecção OTA), sem falhas. Os testes Python do empacotador, `py_compile`, `sh -n`, preflight dos assets e `git diff --check` também passaram. A verificação do APK confirmou todos os hashes de runtime e 92 avisos de licença empacotados.
 
-No QEMU de host 8.2.2 com TCG e discos em snapshot, `-cpu cortex-a57` causou panic em `virt_wifi.ko`; `-cpu max` não repetiu o panic e avançou pelo kernel, `init` Android e descompressão dos APEX. Após 300 segundos não houve confirmação de zygote/framework, então esse teste não demonstra boot Android completo. Um smoke test adicional de 60 segundos usou a sintaxe exata do builder Kotlin (`-blockdev`, `bootindex`, dois discos, AAVMF e virtio): o kernel reconheceu `vda`, `vdb`, GPU e teclado sem erro de inicialização. O Galaxy A07 não foi testado.
+## O que ainda falta validar
 
-## O que ainda impede boot pelo app
+1. Instalar e executar o APK em Android físico, em especial no Galaxy A07 4G: primeiro boot, execução do QEMU Android-linkado, conexão VNC, toque/teclado, QMP e persistência após reinício.
+2. Avaliar memória, temperatura e desempenho TCG no Helio G99. A configuração atual força TCG; a presença de `/dev/kvm` no aparelho não foi verificada e não se deve anunciar aceleração KVM.
+3. Atingir o framework Android com o bootstrap. O smoke test de host chegou ao `init`/APEX, mas não confirmou zygote.
+4. Aplicar e compilar o overlay ZyX dentro de uma árvore LineageOS completa. Este sandbox ARM64 não satisfaz os requisitos de build (host x86-64, 64 GiB RAM efetiva e 400 GiB livres).
+5. Preparar assinatura de produção e autenticação criptográfica do manifesto `.zyxos`; os hashes atuais verificam integridade, não a identidade do publicador.
 
-O boot continua desabilitado. Ainda faltam o adapter QEMU que implementa a ABI, o binário `aarch64-softmmu`/`libqemu-system-aarch64.so` construído para Android, integração JNI/NDK, renderer VNC/Surface e eventos de toque/teclado. O runtime precisa criar overlays graváveis para os discos de sistema/dados e uma cópia gravável das variáveis UEFI, mantendo os arquivos-base imutáveis. A imagem bootstrap ainda é upstream, não recebeu o overlay ZyX e não alcançou o framework no smoke test; também falta teste real no Galaxy A07.
-
-O bootstrap foi enviado ao Drive privado; tamanho e MD5 no Drive conferem com o arquivo local. Ele não foi tornado público. No app, o provedor Drive pode ser aberto pelo seletor SAF quando o usuário está autenticado no aparelho. A compilação completa da árvore LineageOS também não foi executada: este sandbox ARM64 não tem os recursos de host necessários.
-
-## Limites do host e referências
-
-A documentação AOSP exige host Linux x86-64, pelo menos 64 GiB de RAM efetiva e 400 GiB livres para checkout/build completo. Este sandbox é ARM64, com aproximadamente 35 GB livres e 15 GiB de RAM total (cerca de 13 GiB disponíveis na medição anterior). Veja [`qemu-system-and-build-constraints.md`](qemu-system-and-build-constraints.md) e [`../roms/lineageos-23.2-virtual-bootstrap.md`](../roms/lineageos-23.2-virtual-bootstrap.md).
+O build mais recente é uma alpha experimental. A release pública anterior `v0.1.1-alpha.1` não contém o novo runtime; `0.2.0-alpha.1` ainda não foi publicada como release. Consulte também [`../build/build-report.md`](../build/build-report.md), [`android-qemu-runtime-research.md`](android-qemu-runtime-research.md) e [`../roms/lineageos-23.2-virtual-bootstrap.md`](../roms/lineageos-23.2-virtual-bootstrap.md).
