@@ -1,0 +1,39 @@
+name: Build Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Configurar Android SDK 36
+        uses: android-actions/setup-android@v3
+      - name: Instalar plataforma e ferramentas Android
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Compilar APKs ZyX
+        run: bash ./gradlew --no-daemon testStandardDebugUnitTest assembleStandardDebug assembleCloneDebug assembleStandardRelease
+      - name: Publicar artefatos da compilação
+        uses: actions/upload-artifact@v4
+        with:
+          name: zyx-virtual-apks-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/standard/debug/app-standard-debug.apk
+            app/build/outputs/apk/clone/debug/app-clone-debug.apk
+            app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 30

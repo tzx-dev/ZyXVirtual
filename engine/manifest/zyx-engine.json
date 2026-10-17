@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "name": "zyx-qemu-user",
+  "displayName": "ZyX QEMU user-mode compatibility engine",
+  "backend": "qemu-user",
+  "kernelVirtualization": false,
+  "hostAbi": "arm64-v8a",
+  "guestAbis": ["armeabi", "armeabi-v7a"],
+  "validatedGuestApiMax": 25,
+  "features": {
+    "cpuTranslation": true,
+    "guestMemoryBudget": true,
+    "persistentStorage": true,
+    "inputTouchKeyboard": true,
+    "glBridge": true,
+    "audioBridge": true,
+    "binderProxy": true,
+    "networkProxy": true,
+    "kvm": false,
+    "avf": false,
+    "arm64Guest": false
+  },
+  "artifacts": {
+    "qemu": ["libqemu_gb.so", "libqemu_kk.so"],
+    "binder": ["libbinderd_gb.so", "libbinderd_kk.so"],
+    "gl": ["libglserverd_gb.so", "libglserverd_kk.so", "libglbridge.so"]
+  }
+}

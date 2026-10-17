@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Contract sketch for the future AVF guest. HAL instances are added only with real implementations. -->
+<manifest version="1.0" type="device">
+    <hal format="aidl" optional="true">
+        <name>android.hardware.graphics.composer</name>
+        <version>2</version>
+        <interface>
+            <name>IComposer</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="aidl" optional="true">
+        <name>android.hardware.input</name>
+        <version>1</version>
+        <interface>
+            <name>IInput</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+</manifest>

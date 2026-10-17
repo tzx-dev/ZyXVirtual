@@ -1,0 +1,21 @@
+*.apk
+*_apktool/
+*_jadx/
+.gradle/
+build/
+local.properties
+upstream/
+tools/aapt2
+/docs/assets/zyx-logo-concept.png
+/docs/assets/zyx-mark-transparent.png
+.idea/
+*.iml
+/dist/
+.claude/
+__pycache__/
+
+# ключи подписи — никогда не в репозиторий
+keystore/
+keystore.properties
+*.jks
+*.keystore
