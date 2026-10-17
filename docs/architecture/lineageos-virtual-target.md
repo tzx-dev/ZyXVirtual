@@ -19,7 +19,7 @@ O changelog oficial do LineageOS 23 informa suporte a configurações Cuttlefish
 ## Limites atuais
 
 - O APK continua usando `qemu-arm` linux-user, com ABI guest ARM32 e faixa Android legada; não carrega kernel nem imagens Android 16.
-- Esta cópia do workspace tem aproximadamente 35 GB livres. A wiki LineageOS de máquinas virtuais informa requisitos de build muito maiores para versões recentes (cerca de 64 GB de RAM e 400 GB de armazenamento para LineageOS 21+). O ambiente atual não comporta o sync/build completo.
+- Esta cópia do workspace tem aproximadamente 35 GB livres e o Sandbox dispõe de 15 GiB de RAM total (cerca de 13 GiB disponíveis na medição atual). A wiki LineageOS de máquinas virtuais informa requisitos de build muito maiores para versões recentes (cerca de 64 GB de RAM e 400 GB de armazenamento para LineageOS 21+). O ambiente atual não comporta o sync/build completo.
 - Não há neste workspace uma árvore fonte LineageOS/AOSP completa, kernel guest ZyX, imagem system/boot virtual compilada nem runtime QEMU system/crosvm Android embutido.
 - A sessão Google Drive não tem connector configurado e `gws auth status` informa `auth_method=none`. Não subir uma OTA de telefone como se fosse a ROM ZyX pronta; upload só poderá ocorrer após a imagem ZyX ser construída e depois de a autorização Drive estar disponível.
 

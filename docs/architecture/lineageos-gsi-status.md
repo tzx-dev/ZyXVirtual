@@ -28,7 +28,7 @@ O instalador Android espera exclusivamente `lineage_zyx_virtual` / LineageOS 23.
 4. Implementar renderer de tela e toque/teclado, iniciar a VM e testar boot/persistência num host QEMU.
 5. Testar em Galaxy A07 4G somente após validar RAM, desempenho e ciclo de vida Android; não instalar uma GSI no aparelho como substituto do guest virtual.
 
-Este sandbox não atende aos requisitos oficiais de build AOSP: a documentação atual pede host x86-64, 400 GB de espaço livre e 64 GB de RAM; o sandbox é ARM64, tem ~35 GB livres e ~11 GiB RAM. Por isso, não foi produzida a ROM completa nesta sessão.
+Este sandbox não atende aos requisitos oficiais de build AOSP: a documentação atual pede host x86-64, 400 GB de espaço livre e 64 GB de RAM; o sandbox é ARM64, tem ~35 GB livres e 15 GiB de RAM total (cerca de 13 GiB disponíveis na medição atual). Por isso, não foi produzida a ROM completa nesta sessão.
 
 ## Referências
 

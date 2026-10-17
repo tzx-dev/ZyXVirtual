@@ -25,4 +25,4 @@ O adaptador QEMU que implementa `zyx_qemu_get_api`, a build QEMU `aarch64-softmm
 
 ## Limites do host
 
-A documentação AOSP exige host x86-64, 400 GB de espaço livre e 64 GB RAM para checkout/build. Este sandbox ARM64 tinha aproximadamente 35 GB livres e 11 GiB RAM. O build do APK Android é viável; o build completo da ROM não é. Fontes e medições estão em `docs/architecture/qemu-system-and-build-constraints.md`.
+A documentação AOSP exige host x86-64, 400 GB de espaço livre e 64 GB RAM para checkout/build. Este sandbox ARM64 tem aproximadamente 35 GB livres e 15 GiB RAM total (cerca de 13 GiB disponíveis na medição atual). O build do APK Android é viável; o build completo da ROM não é. Fontes e medições estão em `docs/architecture/qemu-system-and-build-constraints.md`.

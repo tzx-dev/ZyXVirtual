@@ -30,6 +30,8 @@ KEYS = [
     'm_airplane', 'm_stay_awake', 'as_updates', 'as_auto_updates', 'as_auto_updates_sub', 'as_check_updates',
     'as_check_updates_sub', 'update_available_title', 'update_available_msg', 'update_latest', 'update_checking', 'update_btn',
     'update_later', 'update_downloading', 'update_install', 'update_error', 'update_download_error', 'update_open_github',
+    'update_size', 'update_ready_title', 'update_ready_text', 'update_no_updates_title', 'update_latest_github', 'update_error_title',
+    'zyx_os_build_id',
     'zyx_os_installed',
     'zyx_os_build',
     'zyx_os_size',

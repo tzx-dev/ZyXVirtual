@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
@@ -52,7 +53,7 @@ object AppUpdateManager {
             conn.setRequestProperty("User-Agent", "ZyXVirtual-App")
 
             if (conn.responseCode != HttpURLConnection.HTTP_OK) {
-                throw Exception("HTTP ${conn.responseCode}: ${conn.responseMessage}")
+                throw IOException("Não foi possível consultar atualizações (HTTP ${conn.responseCode}).")
             }
 
             val text = conn.inputStream.bufferedReader().use { it.readText() }
@@ -160,7 +161,7 @@ object AppUpdateManager {
         }
 
         if (conn.responseCode != HttpURLConnection.HTTP_OK) {
-            throw Exception("HTTP ${conn.responseCode}: ${conn.responseMessage}")
+            throw IOException("Não foi possível baixar a atualização (HTTP ${conn.responseCode}).")
         }
 
         val totalLength = conn.contentLengthLong.takeIf { it > 0 } ?: release.sizeBytes

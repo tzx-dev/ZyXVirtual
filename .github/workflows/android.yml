@@ -16,6 +16,11 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
+      - name: Gerar e validar recursos pt-BR
+        run: |
+          python3 -m py_compile app/l10n/gen.py app/l10n/keys.py app/l10n/langs/en.py app/l10n/langs/pt-BR.py
+          python3 app/l10n/gen.py
+          git diff --exit-code -- app/src/main/res
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:

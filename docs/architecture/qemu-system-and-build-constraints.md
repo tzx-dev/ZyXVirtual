@@ -22,7 +22,7 @@ Como referência de viabilidade, [Limbo para Android](https://github.com/limboem
 
 A documentação oficial AOSP atual exige workstation Linux x86-64, pelo menos **400 GB livres** para checkout+build e **64 GB RAM**. Fonte: [AOSP build requirements](https://source.android.com/docs/setup/start/requirements) (atualizada em 17/06/2026).
 
-O sandbox desta sessão é ARM64 e apresenta cerca de **35 GB livres** e **11 GiB de RAM**. Portanto, não é possível fazer aqui o checkout/build completo de LineageOS nem alegar uma imagem Android 16 compilada. O device tree, o produto e o pipeline de empacotamento foram preparados, mas um host apropriado ainda é necessário para produzir o `.zyxos` final e fazer o boot smoke test.
+O sandbox desta sessão é ARM64 e apresenta cerca de **35 GB livres** e **15 GiB de RAM total** (aproximadamente **13 GiB disponíveis** na medição atual). Portanto, não é possível fazer aqui o checkout/build completo de LineageOS nem alegar uma imagem Android 16 compilada. O device tree, o produto e o pipeline de empacotamento foram preparados, mas um host apropriado ainda é necessário para produzir o `.zyxos` final e fazer o teste básico de boot.
 
 ## Integração Drive no app
 

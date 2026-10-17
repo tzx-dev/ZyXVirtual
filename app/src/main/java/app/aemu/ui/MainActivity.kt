@@ -274,7 +274,7 @@ private fun ZyxOsPackageCard(installed: app.aemu.core.InstalledZyxOs, onRemove: 
             }
             Text(stringResource(R.string.zyx_os_size, Formatter.formatShortFileSize(ctx, installed.payloadSizeBytes)),
                 style = MaterialTheme.typography.bodySmall)
-            Text("Build: ${installed.manifest.buildId}", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.zyx_os_build_id, installed.manifest.buildId), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(R.string.zyx_os_boot_unavailable), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.tertiary)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

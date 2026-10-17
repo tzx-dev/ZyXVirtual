@@ -59,8 +59,8 @@ class Importer(
         root = paths.root
         root.mkdirs()
         try {
-            onProgress("Opening $name", 0f)
-            val pfd = ctx.contentResolver.openFileDescriptor(uri, "r") ?: throw IOException("file failed to open")
+            onProgress("Abrindo $name", 0f)
+            val pfd = ctx.contentResolver.openFileDescriptor(uri, "r") ?: throw IOException("Não foi possível abrir o arquivo.")
             pfd.use {
                 val ch = FileInputStream(pfd.fileDescriptor).channel
                 val seekable = runCatching { ch.position(0); ch.size() > 0 }.getOrDefault(false)
@@ -73,14 +73,14 @@ class Importer(
             }
             // build.prop is optional: some dumps/ports lack it, Analyzer infers the version from the tree
             if (!File(root, "system/framework").isDirectory && !File(root, "system/build.prop").isFile)
-                throw IOException("no Android system partition found in file")
+                throw IOException("Nenhuma partição de sistema Android foi encontrada no arquivo.")
             finishTree()
             recovery?.let { runCatching { RecoveryImage.install(paths, it, log) } }
-            onProgress("Analyzing firmware", 0.97f)
+            onProgress("Analisando o sistema", 0.97f)
             val img = Analyzer(ctx, paths, ramdisk).analyze(id, name)
             TreeFixer(ctx, paths, img, log).sanitize()
             ImageStore.save(ctx, img.copy(sizeBytes = ImageStore.du(paths.dir)))
-            onProgress("Done", 1f)
+            onProgress("Concluído", 1f)
             log("import: $files files, ${bytes shr 20} MB")
             return ImageStore.get(ctx, id)!!
         } catch (t: Throwable) {
@@ -100,10 +100,10 @@ class Importer(
         val h = ByteArray(head.remaining()).also { head.get(it) }
         when {
             h.size > 4 && h[0] == 'P'.code.toByte() && h[1] == 'K'.code.toByte() && h[2].toInt() == 3 && h[3].toInt() == 4 -> {
-                if (ch != null) importZip(ch, name, depth) else throw IOException("zip without random access")
+                if (ch != null) importZip(ch, name, depth) else throw IOException("O arquivo ZIP não permite acesso aleatório.")
             }
             h.size > 6 && h[0] == '7'.code.toByte() && h[1] == 'z'.code.toByte() && h[2] == 0xBC.toByte() && h[3] == 0xAF.toByte() -> {
-                if (ch != null) importSevenZ(ch, name, depth) else throw IOException("7z without random access")
+                if (ch != null) importSevenZ(ch, name, depth) else throw IOException("O arquivo 7z não permite acesso aleatório.")
             }
             SparseSource.probe(src) -> importImage(SparseSource(listOf(src)), "system")
             Ext4Reader.probe(src) -> importImage(src, "system")
@@ -113,7 +113,7 @@ class Importer(
             h[0] == 0xfd.toByte() && h[1] == '7'.code.toByte() -> importTarStream(XZInputStream(streamOf(src)), name, depth)
             h[0] == 'B'.code.toByte() && h[1] == 'Z'.code.toByte() && h[2] == 'h'.code.toByte() -> importTarStream(BZip2CompressorInputStream(streamOf(src)), name, depth)
             String(h, 0, 8, Charsets.ISO_8859_1) == "ANDROID!" -> takeBoot(readAllFrom(src))
-            else -> throw IOException("unknown file format \"$name\"")
+            else -> throw IOException("Formato de arquivo desconhecido: \"$name\"")
         }
     }
 
@@ -200,13 +200,13 @@ class Importer(
                 }
             }
             done += maxOf(0L, e.size)
-            onProgress("Extracting: $base", 0.9f * done / total)
+            onProgress("Extraindo: $base", 0.9f * done / total)
         }
         if (datBr != null && !gotSystem) {
             val listName = datBr.name.substringBeforeLast("system.new.dat") + "system.transfer.list"
-            val listE = entries.firstOrNull { it.name == listName } ?: throw IOException("system.transfer.list missing")
+            val listE = entries.firstOrNull { it.name == listName } ?: throw IOException("Arquivo system.transfer.list ausente.")
             val list = zip.getInputStream(listE).use { String(it.readBytes()) }
-            onProgress("Building system.img from OTA", 0.5f)
+            onProgress("Montando system.img a partir da OTA", 0.5f)
             val raw = File(tmp, "system.raw")
             zip.getInputStream(datBr).use { s ->
                 val data = if (datBr.name.endsWith(".br")) BrotliInputStream(BufferedInputStream(s, 1 shl 20)) else s
@@ -245,7 +245,7 @@ class Importer(
                         !base.startsWith("MODEM") && !base.startsWith("CP_") && !base.contains("CSC") ->
                         nested.add(spill(stream, base) to "archive")
                 }
-                onProgress("Extracting: $base", 0.5f)
+                onProgress("Extraindo: $base", 0.5f)
             }
             for ((f, kind) in nested) {
                 try {
@@ -352,7 +352,7 @@ class Importer(
                     }
                 }
             }
-            if (files % 200 == 0) onProgress("Extracting: $base", -1f)
+            if (files % 200 == 0) onProgress("Extraindo: $base", -1f)
         }
     }
 
@@ -371,7 +371,7 @@ class Importer(
 
     private fun importImage(src: RandomSource, mount: String) {
         val fs = Ext4Reader(src)
-        onProgress("Reading image $mount (ext4, block ${fs.blockSize})", -1f)
+        onProgress("Lendo a imagem $mount (ext4, bloco ${fs.blockSize})", -1f)
         var n = 0
         fs.walk { path, node ->
             if (cancelled) throw IOException("cancelled")
