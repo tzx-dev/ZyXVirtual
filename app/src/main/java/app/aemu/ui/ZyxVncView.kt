@@ -15,6 +15,7 @@ import java.io.DataOutputStream
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.util.concurrent.Executors
 
 /** Cliente RFB mínimo para o servidor VNC local do QEMU (sem autenticação, vinculado a loopback). */
 class ZyxVncView(context: Context) : View(context) {
@@ -31,6 +32,10 @@ class ZyxVncView(context: Context) : View(context) {
     private var fbWidth = 0
     private var fbHeight = 0
     private var pressed = false
+    @Volatile private var primaryPointerId = MotionEvent.INVALID_POINTER_ID
+    private val inputExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "zyx-vnc-input").apply { isDaemon = true }
+    }
 
     init {
         isFocusable = true
@@ -48,10 +53,18 @@ class ZyxVncView(context: Context) : View(context) {
     fun disconnect() {
         active = false
         connected = false
+        pressed = false
+        primaryPointerId = MotionEvent.INVALID_POINTER_ID
         runCatching { socket?.close() }
         socket = null
         output = null
         postInvalidate()
+    }
+
+    override fun onDetachedFromWindow() {
+        disconnect()
+        inputExecutor.shutdownNow()
+        super.onDetachedFromWindow()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -66,15 +79,53 @@ class ZyxVncView(context: Context) : View(context) {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         requestFocus()
-        if (!connected || width <= 0 || height <= 0 || fbWidth <= 0 || fbHeight <= 0) return false
+        // Consume o gesto mesmo enquanto o VNC conecta; devolver false aqui permite que
+        // outro pai roube o gesto e faz o primeiro toque parecer perdido.
+        if (!connected || width <= 0 || height <= 0 || fbWidth <= 0 || fbHeight <= 0) return true
         val action = event.actionMasked
-        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) pressed = true
-        val mask = if (pressed && action != MotionEvent.ACTION_UP && action != MotionEvent.ACTION_CANCEL && action != MotionEvent.ACTION_POINTER_UP) 1 else 0
-        val x = (event.x * fbWidth / width).toInt().coerceIn(0, fbWidth - 1)
-        val y = (event.y * fbHeight / height).toInt().coerceIn(0, fbHeight - 1)
-        sendPointer(mask, x, y)
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) pressed = false
+        when (action) {
+            MotionEvent.ACTION_DOWN -> {
+                primaryPointerId = event.getPointerId(event.actionIndex)
+                pressed = true
+                sendPointerAt(event, event.actionIndex, 1)
+            }
+            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_MOVE -> {
+                val index = event.findPointerIndex(primaryPointerId).takeIf { it >= 0 } ?: 0
+                pressed = true
+                sendPointerAt(event, index, 1)
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                val liftedIndex = event.actionIndex
+                if (event.getPointerId(liftedIndex) == primaryPointerId) {
+                    val replacement = (0 until event.pointerCount).firstOrNull { it != liftedIndex }
+                    if (replacement != null) {
+                        primaryPointerId = event.getPointerId(replacement)
+                        sendPointerAt(event, replacement, 1)
+                    } else {
+                        pressed = false
+                        sendPointerAt(event, liftedIndex, 0)
+                        primaryPointerId = MotionEvent.INVALID_POINTER_ID
+                    }
+                } else {
+                    val index = event.findPointerIndex(primaryPointerId).takeIf { it >= 0 } ?: 0
+                    sendPointerAt(event, index, 1)
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                val index = event.findPointerIndex(primaryPointerId).takeIf { it >= 0 } ?: 0
+                pressed = false
+                sendPointerAt(event, index, 0)
+                primaryPointerId = MotionEvent.INVALID_POINTER_ID
+            }
+        }
         return true
+    }
+
+    private fun sendPointerAt(event: MotionEvent, index: Int, mask: Int) {
+        if (index !in 0 until event.pointerCount) return
+        val x = (event.getX(index) * fbWidth / width).toInt().coerceIn(0, fbWidth - 1)
+        val y = (event.getY(index) * fbHeight / height).toInt().coerceIn(0, fbHeight - 1)
+        sendPointer(mask, x, y)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -255,20 +306,27 @@ class ZyxVncView(context: Context) : View(context) {
     }
 
     private fun sendPointer(mask: Int, x: Int, y: Int) {
-        val out = output ?: return
-        synchronized(outputLock) {
-            runCatching {
-                out.writeByte(5); out.writeByte(mask); out.writeShort(x); out.writeShort(y); out.flush()
-            }.onFailure { disconnect() }
+        enqueueInput { out ->
+            out.writeByte(5); out.writeByte(mask); out.writeShort(x); out.writeShort(y); out.flush()
         }
     }
 
     private fun sendKey(down: Boolean, symbol: Int) {
-        val out = output ?: return
-        synchronized(outputLock) {
-            runCatching {
-                out.writeByte(4); out.writeByte(if (down) 1 else 0); out.writeShort(0); out.writeInt(symbol); out.flush()
-            }.onFailure { disconnect() }
+        enqueueInput { out ->
+            out.writeByte(4); out.writeByte(if (down) 1 else 0); out.writeShort(0); out.writeInt(symbol); out.flush()
+        }
+    }
+
+    /** Nunca bloqueia a thread de UI em escrita/flush de socket VNC. */
+    private fun enqueueInput(write: (DataOutputStream) -> Unit) {
+        runCatching {
+            inputExecutor.execute {
+                val out = output ?: return@execute
+                val succeeded = synchronized(outputLock) {
+                    runCatching { write(out) }.isSuccess
+                }
+                if (!succeeded && active) post { if (active) disconnect() }
+            }
         }
     }
 

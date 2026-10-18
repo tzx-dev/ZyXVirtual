@@ -89,6 +89,21 @@ if [ ! -d "$PRODUCT_OUT" ]; then
   echo "Build terminou sem diretório de produto: $PRODUCT_OUT" >&2
   exit 5
 fi
+
+# vm-utm-zip empacota as imagens finais, mas o artefato só pode ser chamado de
+# ZyX OS pronto quando a árvore de produto também contém APEX gerados por este
+# build. O bootstrap upstream não passa por esta verificação.
+APEX_REPORT=$OUT_DIR/apex-manifest.txt
+find "$PRODUCT_OUT" -type f -name '*.apex' -print | sort > "$APEX_REPORT"
+APEX_COUNT=$(wc -l < "$APEX_REPORT" | tr -d ' ')
+if [ "$APEX_COUNT" -eq 0 ]; then
+  echo "Build terminou sem APEX compilados em $PRODUCT_OUT." >&2
+  echo "Nenhum artefato ZyX será declarado pronto." >&2
+  rm -f "$APEX_REPORT"
+  exit 5
+fi
+printf 'APEX compilados: %s\nRelatório: %s\n' "$APEX_COUNT" "$APEX_REPORT"
+
 UTM_ZIP=$(find "$PRODUCT_OUT" -type f -path '*/VirtualMachine/UTM/*' -name 'UTM-VM-lineage-*.zip' -print | sort | tail -n 1)
 if [ -z "$UTM_ZIP" ] || [ ! -s "$UTM_ZIP" ]; then
   echo "Build terminou, mas não gerou o pacote UTM esperado em $PRODUCT_OUT." >&2
