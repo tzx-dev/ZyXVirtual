@@ -43,6 +43,24 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: ''
+      - name: Configurar assinatura estável do APK release
+        env:
+          KEYSTORE_B64: ${{ secrets.ZYX_RELEASE_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.ZYX_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ZYX_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ZYX_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > zyx-release.jks
+            cat > keystore.properties <<EOF
+          storeFile=zyx-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          else
+            echo "Aviso: secrets de assinatura não configurados; o APK release será unsigned." >&2
+          fi
       - name: Instalar plataforma e ferramentas Android
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - name: Preparar runtime QEMU system-mode ARM64
@@ -59,7 +77,6 @@ jobs:
           name: zyx-virtual-apks-${{ github.sha }}
           path: |
             app/build/outputs/apk/standard/debug/app-standard-debug.apk
-            app/build/outputs/apk/clone/debug/app-clone-debug.apk
-            app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk
+            app/build/outputs/apk/standard/release/*.apk
           if-no-files-found: error
           retention-days: 30

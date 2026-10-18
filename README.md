@@ -2,7 +2,7 @@
 
 ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmulator), destinado a um único guest Android full-system ARM64. O alvo final é **ZyX OS**, baseado em LineageOS 23.2 / Android 16, `virtio_arm64only`, sem Google Apps.
 
-## Estado — `0.2.4-alpha.1` (prévia experimental)
+## Estado — `0.2.5-alpha.1` (prévia experimental)
 
 - A tela inicial agora é uma biblioteca compacta: pacote ZyX OS instalado ou estado vazio com ação para importar. A landing page extensa foi removida.
 - Cartões, botões e painel de logs/diagnóstico usam azul `#3D5AFE`, bordas arredondadas e interface localizada em Português Brasileiro.

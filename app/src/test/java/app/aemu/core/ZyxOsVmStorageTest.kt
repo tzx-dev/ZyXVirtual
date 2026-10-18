@@ -78,6 +78,17 @@ class ZyxOsVmStorageTest {
         assertArrayEquals(guestState, File(restarted.diskPath).readBytes())
     }
 
+    @Test fun replacesAnInterruptedPersistentCopy() {
+        val (installed, payload) = installed()
+        val first = ZyxOsVmStorage.prepare(installed)
+        val truncated = File(first.diskPath)
+        truncated.writeBytes(payload.getValue("LineageOS_on_arm64.utm/Data/vda.qcow2").copyOf(2))
+
+        val recovered = ZyxOsVmStorage.prepare(installed)
+
+        assertArrayEquals(payload.getValue("LineageOS_on_arm64.utm/Data/vda.qcow2"), File(recovered.diskPath).readBytes())
+    }
+
     @Test fun rejectsBaseDiskChangedAfterItsManifestHashWasRecorded() {
         val (installed) = installed()
         val base = ZyxOsVmStorage.resolve(installed).systemDisk

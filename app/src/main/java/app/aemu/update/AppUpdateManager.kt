@@ -70,23 +70,26 @@ object AppUpdateManager {
                 val body = rel.optString("body", "")
 
                 val assets = rel.optJSONArray("assets") ?: continue
-                for (j in 0 until assets.length()) {
+                val apkCandidates = buildList {
+                    for (j in 0 until assets.length()) {
                     val asset = assets.getJSONObject(j)
                     val assetName = asset.optString("name", "")
                     if (assetName.endsWith(".apk", ignoreCase = true)) {
-                        val downloadUrl = asset.getString("browser_download_url")
-                        val sizeBytes = asset.optLong("size", 0L)
-                        return@runCatching ReleaseInfo(
-                            versionName = versionName,
-                            tagName = tagName,
-                            title = title,
-                            body = body,
-                            downloadUrl = downloadUrl,
-                            fileName = assetName,
-                            sizeBytes = sizeBytes
-                        )
+                            add(asset)
+                        }
                     }
                 }
+                val asset = apkCandidates.minByOrNull { apkPreference(it.optString("name", "")) }
+                    ?: continue
+                return@runCatching ReleaseInfo(
+                    versionName = versionName,
+                    tagName = tagName,
+                    title = title,
+                    body = body,
+                    downloadUrl = asset.getString("browser_download_url"),
+                    fileName = asset.optString("name", "app-standard-release.apk"),
+                    sizeBytes = asset.optLong("size", 0L)
+                )
             }
             null
         }
@@ -118,6 +121,15 @@ object AppUpdateManager {
         }
 
         return false
+    }
+
+    /** Prefer the installable standard app; never select the clone flavor from a release asset list. */
+    private fun apkPreference(name: String): Int = when {
+        name == "app-standard-release.apk" -> 0
+        name == "app-standard-debug.apk" -> 1
+        name == "app-standard-release-unsigned.apk" -> 2
+        name.contains("clone", ignoreCase = true) -> 100
+        else -> 50
     }
 
     /**

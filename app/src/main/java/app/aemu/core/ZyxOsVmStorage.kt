@@ -66,7 +66,8 @@ object ZyxOsVmStorage {
             .replace(Regex("[^A-Za-z0-9_.-]"), "_")
             .take(64)
             .ifBlank { "unknown" }
-        val stateDir = File(parent, "vm-state/$buildKey")
+        val packageKey = packageFingerprint(installed).take(16)
+        val stateDir = File(parent, "vm-state/$buildKey-$packageKey")
         require(stateDir.mkdirs() || stateDir.isDirectory) { "Não foi possível criar o armazenamento persistente da VM." }
 
         fun copyItem(source: File, name: String): CopyItem {
@@ -80,11 +81,14 @@ object ZyxOsVmStorage {
             sources.dataDisk?.let { add(copyItem(it, "vdb-writable.qcow2")) }
             add(copyItem(sources.firmwareVarsTemplate, "efi_vars.fd"))
         }
-        val invalidExisting = copies.firstOrNull { item ->
+        val invalidExisting = copies.filter { item ->
             item.target.exists() && (!item.target.isFile || item.target.length() != item.source.length())
         }
-        require(invalidExisting == null) {
-            "O arquivo persistente ${invalidExisting?.target?.name} está incompleto; faça uma cópia antes de recriar o estado da VM."
+        invalidExisting.forEach { item ->
+            require(item.target.deleteRecursively()) {
+                "Não foi possível remover a cópia persistente incompleta ${item.target.name}."
+            }
+            File(item.target.parentFile, item.target.name + ".part").delete()
         }
         val missingBytes = copies.filter { !it.target.exists() }.sumOf { it.source.length() }
         require(stateDir.usableSpace >= missingBytes + MIN_FREE_SPACE_BYTES) {
@@ -141,6 +145,19 @@ object ZyxOsVmStorage {
         } finally {
             temp.delete()
         }
+    }
+
+    private fun packageFingerprint(installed: InstalledZyxOs): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        installed.manifest.files.sortedBy { it.path }.forEach { entry ->
+            digest.update(entry.path.toByteArray(Charsets.UTF_8))
+            digest.update(0.toByte())
+            digest.update(entry.size.toString().toByteArray(Charsets.UTF_8))
+            digest.update(0.toByte())
+            digest.update(entry.sha256.toByteArray(Charsets.US_ASCII))
+            digest.update(0.toByte())
+        }
+        return digest.digest().toHex()
     }
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it.toInt() and 0xff) }
