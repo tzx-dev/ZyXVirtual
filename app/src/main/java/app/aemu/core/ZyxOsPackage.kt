@@ -27,10 +27,14 @@ data class ZyxOsPackageManifest(
     val packageType: String,
     val minimumMemoryMiB: Int,
     val files: List<ZyxPackageFile>,
+    val hasPrewarmedDataDisk: Boolean = false,
 ) {
     /** Throws unless this is the one supported ZyX OS package, not an arbitrary ROM archive. */
     fun requireSupported(): ZyxOsPackageManifest {
-        require(schemaVersion == 1) { "Versão de manifesto ZyXOS não suportada: $schemaVersion." }
+        require(!hasPrewarmedDataDisk) {
+            "Este pacote ZyXOS contém userdata pré-aquecido incompatível com metadata-encryption; importe uma ROM limpa."
+        }
+        require(schemaVersion == 1) { "Schema ZyXOS não suportado: $schemaVersion" }
         require(packageId == "org.zyx.virtual.os") { "Este arquivo não é um pacote ZyX OS." }
         require(lineageBranch == "lineage-23.2" && androidMajorVersion == 16) {
             "Apenas ZyX OS baseado em LineageOS 23.2 / Android 16 é aceito."
@@ -97,6 +101,7 @@ data class ZyxOsPackageManifest(
                 packageType = runtime.getString("packageType"),
                 minimumMemoryMiB = runtime.getInt("minimumMemoryMiB"),
                 files = files,
+                hasPrewarmedDataDisk = root.optJSONObject("provenance")?.has("dataDiskRepair") == true,
             )
         }
     }
