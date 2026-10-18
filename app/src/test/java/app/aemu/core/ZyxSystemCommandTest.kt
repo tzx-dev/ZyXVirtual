@@ -20,6 +20,7 @@ class ZyxSystemCommandTest {
         assertTrue(args.contains("virtio-gpu-pci"))
         assertTrue(args.contains("virtio-keyboard-pci"))
         assertTrue(args.contains("virtio-tablet-pci"))
+        assertTrue(args.contains("virtio-rng-pci"))
         assertTrue(args.contains("virtio-net-pci,netdev=zyxnet0,romfile="))
         assertTrue(args.contains("order=c"))
         assertTrue(args.contains("virtio-blk-pci,drive=zyxdisk0,bootindex=0"))

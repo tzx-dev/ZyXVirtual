@@ -62,6 +62,9 @@ object ZyxSystemCommand {
             "-device", "virtio-tablet-pci",
             "-netdev", "user,id=zyxnet0",
             "-device", "virtio-net-pci,netdev=zyxnet0,romfile=",
+            // A configuração UTM upstream habilita VirtIO RNG. Sem ele, keystore2/vold
+            // podem bloquear a criação das chaves do usuário 0 e disparar init_user0_failed.
+            "-device", "virtio-rng-pci",
             "-serial", "file:${config.serialLogPath}",
             "-monitor", "none",
             "-qmp", "unix:${config.qmpSocketPath},server=on,wait=off",
