@@ -20,7 +20,15 @@ data class ZyxSystemVmConfig(
     val firmwareVarsPath: String? = null,
     /** Arquivo privado usado para invalidar o estado após uma saída abrupta do guest. */
     val stateMarkerPath: String? = null,
+    /** Backend de CPU já resolvido pelo processo; TCG mantém os testes e o fallback determinísticos. */
+    val accelerator: ZyxAccelerator = ZyxAccelerator.AUTO,
 )
+
+enum class ZyxAccelerator {
+    AUTO,
+    KVM,
+    TCG,
+}
 
 /** Pure command construction, intentionally separate from the legacy qemu-linux-user runner. */
 object ZyxSystemCommand {
@@ -52,10 +60,13 @@ object ZyxSystemCommand {
         val args = mutableListOf(
             "-name", "ZyX-OS",
             "-machine", "virt,gic-version=3",
-            "-cpu", "max",
+            "-cpu", if (config.accelerator == ZyxAccelerator.KVM) "host" else "max",
             "-smp", config.cpuCount.toString(),
             "-m", config.memoryMiB.toString(),
-            "-accel", "tcg,thread=multi",
+            "-accel", when (config.accelerator) {
+                ZyxAccelerator.KVM -> "kvm,thread=multi"
+                ZyxAccelerator.AUTO, ZyxAccelerator.TCG -> "tcg,thread=multi"
+            },
             "-nodefaults",
             "-no-user-config",
             "-display", "none",

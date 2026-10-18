@@ -34,6 +34,11 @@ class ZyxQemuSystemProcess(
         val launchConfig = config.copy(
             qmpSocketPath = qmpSocket.absolutePath,
             qemuDataDirectory = runtime.dataDirectory.absolutePath,
+            accelerator = if (config.accelerator == ZyxAccelerator.TCG) {
+                ZyxAccelerator.TCG
+            } else {
+                ZyxAcceleration.select()
+            },
         )
         val args = ZyxSystemCommand.build(launchConfig)
         File(config.serialLogPath).parentFile?.mkdirs()

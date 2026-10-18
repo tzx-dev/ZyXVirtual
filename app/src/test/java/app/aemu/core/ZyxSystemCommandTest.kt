@@ -28,6 +28,12 @@ class ZyxSystemCommandTest {
         assertTrue(args.none { it.contains("qemu-arm") || it.contains("linux-user") })
     }
 
+    @Test fun emitsKvmAndHostCpuWhenKvmIsSelected() {
+        val args = ZyxSystemCommand.build(config().copy(accelerator = ZyxAccelerator.KVM))
+        assertEquals("host", args[args.indexOf("-cpu") + 1])
+        assertEquals("kvm,thread=multi", args[args.indexOf("-accel") + 1])
+    }
+
     @Test fun diskPathWithSpacesIsKeptAsJsonArgument() {
         val args = ZyxSystemCommand.build(config("/data/app/zyx os/disk.qcow2"))
         val blockIndex = args.indexOf("-blockdev")

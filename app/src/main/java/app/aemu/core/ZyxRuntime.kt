@@ -22,6 +22,8 @@ object ZyxRuntime {
         val memoryMb: Int,
         val gpu: String,
         val kvmDevice: Boolean,
+        val kvmAccessible: Boolean,
+        val avfPresent: Boolean,
         val qemuSystemBundled: Boolean,
     )
 
@@ -29,13 +31,16 @@ object ZyxRuntime {
         val abis = Build.SUPPORTED_ABIS.toList()
         val memory = ActivityManager.MemoryInfo()
         (ctx.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.getMemoryInfo(memory)
+        val acceleration = ZyxAcceleration.probe()
         return HostCapabilities(
             abis = abis,
             arm64 = abis.any { it == "arm64-v8a" },
             cpuCount = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
             memoryMb = (memory.totalMem / (1024L * 1024L)).toInt().coerceAtLeast(0),
             gpu = HostInfo.gpu().ifBlank { "desconhecida" },
-            kvmDevice = File("/dev/kvm").let { it.exists() && it.canRead() },
+            kvmDevice = acceleration.kvmDevicePresent,
+            kvmAccessible = acceleration.kvmAccessible,
+            avfPresent = acceleration.avfFilesPresent,
             qemuSystemBundled = ZyxQemuSystemProcess.isAvailable(ctx),
         )
     }
@@ -44,7 +49,7 @@ object ZyxRuntime {
         val h = probe(ctx)
         val abi = h.abis.ifEmpty { listOf("desconhecida") }.joinToString(", ")
         val backend = if (h.qemuSystemBundled) {
-            "QEMU system-mode ARM64 disponível; a configuração atual usa TCG"
+            "QEMU system-mode ARM64 disponível; acelerador selecionado: ${ZyxAcceleration.probe().selected.name}"
         } else {
             "QEMU user-mode ARM32 legado; /dev/kvm não substitui o motor system-mode ausente"
         }
@@ -53,6 +58,9 @@ object ZyxRuntime {
             append("Host ABI: ").append(abi).append('\n')
             append("CPU: ").append(h.cpuCount).append(" threads · RAM ").append(h.memoryMb).append(" MB\n")
             append("GPU: ").append(h.gpu).append('\n')
+            append("/dev/kvm: ").append(if (h.kvmDevice) "presente" else "ausente")
+                .append(if (h.kvmAccessible) " e acessível" else " e não acessível").append('\n')
+            append("AVF/pKVM: ").append(if (h.avfPresent) "arquivos detectados (não usado pelo QEMU atual)" else "não detectado").append('\n')
             append("Backend legado: ").append(backend).append('\n')
             append("QEMU system-mode ARM64: ").append(if (h.qemuSystemBundled) "executável Android presente" else "executável Android não empacotado; boot indisponível")
         }
@@ -69,7 +77,7 @@ object ZyxRuntime {
             mode,
             abi,
             h.arm64,
-            h.kvmDevice,
+            h.kvmAccessible,
             h.gpu,
         )
     }
