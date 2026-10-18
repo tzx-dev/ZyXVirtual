@@ -89,6 +89,18 @@ class ZyxOsVmStorageTest {
         assertArrayEquals(payload.getValue("LineageOS_on_arm64.utm/Data/vda.qcow2"), File(recovered.diskPath).readBytes())
     }
 
+    @Test fun replacesACompleteButDirtyPersistentCopyAfterAnAbortedBoot() {
+        val (installed, payload) = installed()
+        val first = ZyxOsVmStorage.prepare(installed)
+        File(first.diskPath).writeBytes(byteArrayOf(99, 98, 97, 96, 95, 94))
+        ZyxOsVmStorage.markRunning(first)
+
+        val recovered = ZyxOsVmStorage.prepare(installed)
+
+        assertArrayEquals(payload.getValue("LineageOS_on_arm64.utm/Data/vda.qcow2"), File(recovered.diskPath).readBytes())
+        assertTrue(!File(first.stateMarkerPath!!).exists())
+    }
+
     @Test fun rejectsBaseDiskChangedAfterItsManifestHashWasRecorded() {
         val (installed) = installed()
         val base = ZyxOsVmStorage.resolve(installed).systemDisk

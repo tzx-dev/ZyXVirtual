@@ -69,6 +69,7 @@ object ZyxOsVmStorage {
         val packageKey = packageFingerprint(installed).take(16)
         val stateDir = File(parent, "vm-state/$buildKey-$packageKey")
         require(stateDir.mkdirs() || stateDir.isDirectory) { "Não foi possível criar o armazenamento persistente da VM." }
+        val stateMarker = File(stateDir, ".running")
 
         fun copyItem(source: File, name: String): CopyItem {
             val relative = source.relativeTo(installed.directory.canonicalFile).invariantSeparatorsPath
@@ -80,6 +81,16 @@ object ZyxOsVmStorage {
             add(copyItem(sources.systemDisk, "vda-writable.qcow2"))
             sources.dataDisk?.let { add(copyItem(it, "vdb-writable.qcow2")) }
             add(copyItem(sources.firmwareVarsTemplate, "efi_vars.fd"))
+        }
+        if (stateMarker.isFile) {
+            // Um QEMU morto durante init_user0/APEX pode deixar o ext4 do guest
+            // somente leitura mesmo quando o QCOW2 ainda tem o tamanho correto.
+            // Nunca reutilize esse estado: volte às imagens verificadas do pacote.
+            copies.forEach { item ->
+                item.target.delete()
+                File(item.target.parentFile, item.target.name + ".part").delete()
+            }
+            stateMarker.delete()
         }
         val invalidExisting = copies.filter { item ->
             item.target.exists() && (!item.target.isFile || item.target.length() != item.source.length())
@@ -111,7 +122,22 @@ object ZyxOsVmStorage {
             qmpSocketPath = File(runDir, "qmp.sock").absolutePath,
             firmwareCodePath = sources.firmwareCode.absolutePath,
             firmwareVarsPath = File(stateDir, "efi_vars.fd").absolutePath,
+            stateMarkerPath = stateMarker.absolutePath,
         )
+    }
+
+    /** Marca o estado como potencialmente sujo antes de entregar o guest ao QEMU. */
+    fun markRunning(config: ZyxSystemVmConfig) {
+        config.stateMarkerPath?.let { marker ->
+            val file = File(marker)
+            file.parentFile?.mkdirs()
+            file.writeText("running\n", Charsets.US_ASCII)
+        }
+    }
+
+    /** Remove o marcador somente quando o guest desligou de modo limpo. */
+    fun markStoppedCleanly(config: ZyxSystemVmConfig) {
+        config.stateMarkerPath?.let { File(it).delete() }
     }
 
     private fun copyVerifiedIfNeeded(item: CopyItem) {

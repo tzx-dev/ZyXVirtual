@@ -18,6 +18,8 @@ data class ZyxSystemVmConfig(
     val initrdPath: String? = null,
     val firmwareCodePath: String? = null,
     val firmwareVarsPath: String? = null,
+    /** Arquivo privado usado para invalidar o estado após uma saída abrupta do guest. */
+    val stateMarkerPath: String? = null,
 )
 
 /** Pure command construction, intentionally separate from the legacy qemu-linux-user runner. */
@@ -41,6 +43,7 @@ object ZyxSystemCommand {
         config.initrdPath?.let(::requireAbsolutePath)
         config.firmwareCodePath?.let(::requireAbsolutePath)
         config.firmwareVarsPath?.let(::requireAbsolutePath)
+        config.stateMarkerPath?.let(::requireAbsolutePath)
         require(config.initrdPath == null || config.kernelPath != null) { "initrd requer um kernel explícito." }
         require((config.firmwareCodePath == null) == (config.firmwareVarsPath == null)) {
             "Firmware pflash precisa de imagem code e vars em conjunto."

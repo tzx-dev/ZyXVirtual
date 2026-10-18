@@ -51,7 +51,13 @@ class ZyxQemuSystemProcess(
                 (System.getenv("LD_LIBRARY_PATH")?.takeIf { it.isNotBlank() }?.let { ":$it" } ?: ""))
             put("QEMU_AUDIO_DRV", "none")
         }
-        return builder.start().also { process = it }
+        ZyxOsVmStorage.markRunning(config)
+        return try {
+            builder.start().also { process = it }
+        } catch (t: Throwable) {
+            ZyxOsVmStorage.markStoppedCleanly(config)
+            throw t
+        }
     }
 
     fun requestReset(): Boolean = isRunning && sendQmp("system_reset")
@@ -66,6 +72,7 @@ class ZyxQemuSystemProcess(
         }
         sendQmp("system_powerdown")
         if (running.waitFor(gracefulTimeoutSeconds, TimeUnit.SECONDS)) {
+            ZyxOsVmStorage.markStoppedCleanly(config)
             process = null
             return true
         }
@@ -76,6 +83,8 @@ class ZyxQemuSystemProcess(
         }
         val stopped = !running.isAlive
         if (stopped) {
+            // Após timeout/quit, mantenha o marcador para forçar uma cópia limpa
+            // no próximo boot; o guest pode ter sido interrompido no meio do fsck.
             process = null
             activeQmpSocketPath?.let { File(it).delete() }
             activeQmpSocketPath = null
