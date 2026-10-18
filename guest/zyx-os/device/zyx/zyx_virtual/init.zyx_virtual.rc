@@ -4,3 +4,10 @@
 
 on post-fs-data
     mkdir /data/zyx 0771 system system
+    # O apexd e o vold precisam destes diretórios antes do primeiro usuário.
+    # A criação só terá efeito quando /data estiver realmente gravável; o app
+    # recria o userdata quando detecta um estado persistente interrompido.
+    mkdir /data/apex 0771 root root encryption=Require
+    mkdir /data/apex/decompressed 0771 root root encryption=Require
+    mkdir /data/misc/vold 0700 root root encryption=Require
+    mkdir /data/misc/vold/user_keys 0700 root root encryption=Require
