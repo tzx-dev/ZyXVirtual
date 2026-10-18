@@ -200,7 +200,7 @@ S = {
     'zyx_os_start_preview': "Iniciar prévia",
     'zyx_vm_exit_status': 'O QEMU encerrou com código %1$d. Isso é um status de saída, não um diagnóstico. Toque para ver ou exportar as saídas capturadas.',
     'zyx_vm_log_title': 'Diagnóstico do QEMU',
-    'zyx_vm_log_empty': 'Nenhuma saída stdout/stderr do QEMU foi capturada em qemu.log.',
+    'zyx_vm_log_empty': 'Nenhuma saída do guest foi capturada em serial.log; o stdout/stderr do QEMU fica separado em qemu.log.',
     'zyx_vm_preparing': "Preparando o sistema virtual…",
     'zyx_vm_connecting': "Conectando ao vídeo da VM…",
     'zyx_vm_running': "Sistema em execução",

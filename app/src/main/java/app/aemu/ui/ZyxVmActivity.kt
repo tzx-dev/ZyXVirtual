@@ -159,7 +159,10 @@ class ZyxVmActivity : ComponentActivity() {
                 val installed = ZyxOsPackageStore(applicationContext).installed()
                     ?: throw IllegalStateException("Instale um pacote ZyX OS válido antes de iniciar a prévia.")
                 val config = ZyxOsVmStorage.prepare(installed)
-                qemuLogFile = File(config.serialLogPath).parentFile?.let { File(it, "qemu.log") }
+                // O Android guest escreve kernel/init/framework em serial.log. O stdout/stderr
+                // do processo QEMU vai para qemu.log e frequentemente fica vazio, então o
+                // diagnóstico principal precisa apontar para o serial real do guest.
+                qemuLogFile = File(config.serialLogPath)
                 val runner = ZyxQemuSystemProcess(applicationContext, config)
                 session = runner
                 val process = runner.start()
@@ -205,7 +208,7 @@ class ZyxVmActivity : ComponentActivity() {
         val source = qemuLogFile
         thread(name = "zyx-qemu-log-read") {
             val raw = source?.let { file ->
-                runCatching { readQemuLogTail(file) }.getOrElse { "Falha ao ler qemu.log: ${it.localizedMessage ?: it}" }
+                runCatching { readQemuLogTail(file) }.getOrElse { "Falha ao ler serial.log: ${it.localizedMessage ?: it}" }
             }.orEmpty()
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
@@ -305,7 +308,7 @@ class ZyxVmActivity : ComponentActivity() {
             val bytes = ByteArray(count)
             input.readFully(bytes)
             val tail = String(bytes, Charsets.UTF_8)
-            return if (length > count) "[Exibindo os últimos 24 KiB de qemu.log]\n\n$tail" else tail
+            return if (length > count) "[Exibindo os últimos 24 KiB de serial.log]\n\n$tail" else tail
         }
     }
 
