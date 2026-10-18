@@ -2,7 +2,7 @@
 
 ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmulator), destinado a um único guest Android full-system ARM64. O alvo final é **ZyX OS**, baseado em LineageOS 23.2 / Android 16, `virtio_arm64only`, sem Google Apps.
 
-## Estado — `0.2.7-alpha.1` (prévia experimental)
+## Estado — `0.2.8-beta` (prévia experimental)
 
 - A tela inicial agora é uma biblioteca compacta: pacote ZyX OS instalado ou estado vazio com ação para importar. A landing page extensa foi removida.
 - Cartões, botões e painel de logs/diagnóstico usam azul `#3D5AFE`, bordas arredondadas e interface localizada em Português Brasileiro.
@@ -13,9 +13,11 @@ ZyX Virtual é um fork experimental do [AEmulator](https://github.com/uxazu/AEmu
 - O APK debug inclui runtime QEMU system-mode ARM64 11.1.2 baseado em pacotes Termux fixados. O runtime é extraído para área privada e conferido antes de iniciar. Isso não comprova compatibilidade do binário em todo Android físico.
 - O launcher process-based usa TCG, QMP e VNC; armazenamento provisiona cópias graváveis persistentes dos discos e variáveis UEFI, sem modificar as bases.
 - O launcher agora reproduz o `RNGDevice=true` do pacote UTM upstream com `virtio-rng-pci`, evitando bloqueios de keystore2/vold na criação das chaves do usuário 0.
+- O estado persistente recebe um marcador durante a execução; depois de um crash ou reboot abrupto, as cópias graváveis são recriadas para não reutilizar um `/data` somente leitura. O produto ZyX é `userdebug`, com `ro.debuggable=1` e ADB TCP para desenvolvimento/root via `adb root`.
 - O cliente VNC envia toque e teclado por uma fila dedicada, sem bloquear a thread de UI em `flush()`; o ponteiro principal é preservado durante gestos multi-touch.
 - O pipeline de ROM exige APEX compilados no `PRODUCT_OUT` antes de empacotar um `.zyxos`; APEX pertencem à imagem/estado do guest, não ao APK.
 - **Limite importante:** esta versão foi compilada e testada no Sandbox; não foi instalada/executada no Galaxy A07 4G. O boot completo do guest, VNC/input em aparelho, SAF/Drive real, desempenho TCG e KVM/AVF seguem sem validação.
+- **Modo beta/root:** `/data` permanece gravável e o `userdebug` permite root por ADB; as partições do sistema não são forçadas a read-write, porque isso invalidaria AVB/APEX e poderia impedir o boot. Use `adb remount`/overlayfs somente quando o build completo suportar essa operação.
 - O `.zyxos` disponível ainda é bootstrap upstream `lineage_virtio_arm64only`. O overlay `lineage_zyx_virtual` não foi compilado/aplicado e não se afirma inicialização completa do Android convidado.
 
 A suíte local v0.2.3-alpha.1 passou em 34 testes Kotlin (standard/clone) e 4 testes Python. Os 71 assets do runtime, incluindo keymap, passaram a verificação de tamanho/SHA-256. A CI remota do commit f95f841 passou. O QEMU e a ROM ainda não foram testados no Galaxy A07 4G. Esta versão está na [prerelease v0.2.3-alpha.1](https://github.com/tzx-dev/ZyXVirtual/releases/tag/v0.2.3-alpha.1). APKs e hashes estão no [relatório de build](docs/build/build-report.md); detalhes no [estado da engine](docs/architecture/engine-refactor-status.md).
