@@ -70,6 +70,7 @@ object ZyxOsVmStorage {
         val stateDir = File(parent, "vm-state/$buildKey-$packageKey")
         require(stateDir.mkdirs() || stateDir.isDirectory) { "Não foi possível criar o armazenamento persistente da VM." }
         val stateMarker = File(stateDir, ".running")
+        val stateSchema = File(stateDir, ".schema")
 
         fun copyItem(source: File, name: String): CopyItem {
             val relative = source.relativeTo(installed.directory.canonicalFile).invariantSeparatorsPath
@@ -82,15 +83,17 @@ object ZyxOsVmStorage {
             sources.dataDisk?.let { add(copyItem(it, "vdb-writable.qcow2")) }
             add(copyItem(sources.firmwareVarsTemplate, "efi_vars.fd"))
         }
-        if (stateMarker.isFile) {
+        if (stateMarker.isFile || stateSchema.readTextOrNull() != STATE_SCHEMA) {
             // Um QEMU morto durante init_user0/APEX pode deixar o ext4 do guest
             // somente leitura mesmo quando o QCOW2 ainda tem o tamanho correto.
+            // Estados criados antes do marcador também são descartados na migração.
             // Nunca reutilize esse estado: volte às imagens verificadas do pacote.
             copies.forEach { item ->
                 item.target.delete()
                 File(item.target.parentFile, item.target.name + ".part").delete()
             }
             stateMarker.delete()
+            stateSchema.delete()
         }
         val invalidExisting = copies.filter { item ->
             item.target.exists() && (!item.target.isFile || item.target.length() != item.source.length())
@@ -106,6 +109,7 @@ object ZyxOsVmStorage {
             "Espaço insuficiente para criar cópias graváveis do sistema ZyX OS."
         }
         copies.forEach(::copyVerifiedIfNeeded)
+        stateSchema.writeText(STATE_SCHEMA, Charsets.US_ASCII)
 
         val logDir = File(stateDir, "logs")
         require(logDir.mkdirs() || logDir.isDirectory) { "Não foi possível criar a pasta de registros da VM." }
@@ -188,6 +192,10 @@ object ZyxOsVmStorage {
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it.toInt() and 0xff) }
 
+    private fun File.readTextOrNull(): String? =
+        if (isFile) runCatching { readText(Charsets.US_ASCII).trim() }.getOrNull() else null
+
     private const val COPY_BUFFER = 1024 * 1024
     private const val MIN_FREE_SPACE_BYTES = 128L * 1024 * 1024
+    private const val STATE_SCHEMA = "2"
 }
