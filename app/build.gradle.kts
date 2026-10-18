@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.security.MessageDigest
 
 plugins {
     id("com.android.application")
@@ -13,8 +14,33 @@ val signProps = Properties().apply {
 }
 val canSign = signProps.getProperty("storeFile")?.let { rootProject.file(it).isFile } == true
 
+// Engine guest files: every kernel carries its own copy of most of them (473 MB, 110 MB of it different, all stored
+// uncompressed because of their names). The APK gets each content once, compressed, as assets/blobs/<sha1>, plus
+// assets/engines.idx ("path<TAB>sha1<TAB>size"); the app reads them through core/EngineAssets.kt
+val engineSrc = file("src/main/assets/engines")
+val engineOut = layout.buildDirectory.dir("generated/engineAssets")
+val packEngines = tasks.register("packEngines") {
+    inputs.dir(engineSrc)
+    outputs.dir(engineOut)
+    doLast {
+        val o = engineOut.get().asFile
+        o.deleteRecursively()
+        File(o, "blobs").mkdirs()
+        val idx = StringBuilder()
+        engineSrc.walkTopDown().filter { it.isFile }.sortedBy { it.invariantSeparatorsPath }.forEach { f ->
+            val sha = MessageDigest.getInstance("SHA-1").digest(f.readBytes()).joinToString("") { "%02x".format(it) }
+            val b = File(o, "blobs/$sha")
+            if (!b.exists()) f.copyTo(b)
+            val rel = f.relativeTo(engineSrc).path.replace('\\', '/')
+            idx.append("engines/$rel\t$sha\t${f.length()}\n")
+        }
+        File(o, "engines.idx").writeText(idx.toString())
+    }
+}
+tasks.named("preBuild") { dependsOn(packEngines) }
+
 android {
-    namespace = "app.aemu"
+    namespace = "app.zyx.virtual"
     compileSdk = 36
 
     defaultConfig {
@@ -22,8 +48,8 @@ android {
         // 28: гостевые бинарники запускаются из каталога данных приложения (W^X для targetSdk>=29)
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
-        versionCode = 112
-        versionName = "0.3.1"
+        versionCode = 300
+        versionName = "0.0.3"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
@@ -36,6 +62,11 @@ android {
         create("clone") {
             dimension = "distribution"
             applicationId = "app.zyx.virtual.clone"
+        }
+        // a copy of this release that installs next to app.zyx.virtual (a package name part cannot start with a digit)
+        create("v0003") {
+            dimension = "distribution"
+            applicationId = "app.zyx.virtual.v0003"
         }
     }
 
@@ -60,15 +91,11 @@ android {
         }
     }
 
-    packaging {
-        // Библиотеки legacy-движка извлекаются в nativeLibraryDir.
-        jniLibs { useLegacyPackaging = true }
-    }
+    sourceSets["main"].assets.setSrcDirs(listOf(engineOut))
 
-    sourceSets {
-        getByName("main") {
-            assets.srcDir(layout.buildDirectory.dir("generated/zyx-qemu-runtime/assets"))
-        }
+    packaging {
+        // исполняемые файлы движка лежат как lib*.so и должны распаковываться на диск
+        jniLibs { useLegacyPackaging = true }
     }
 
     androidResources {
@@ -105,19 +132,22 @@ dependencies {
     implementation("org.tukaani:xz:1.10")
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("org.brotli:dec:0.1.2")
+    implementation("com.github.junrar:junrar:7.5.5")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
 }
 
+// sh: ./gradlew :app:copyReleaseApks -> release-apks/<version>/app.zyx.virtual.apk and app.zyx.virtual.0003.apk
 tasks.register<Copy>("copyReleaseApks") {
-    dependsOn("assembleStandardRelease", "assembleCloneRelease")
+    dependsOn("assembleStandardRelease", "assembleV0003Release")
+    val v = android.defaultConfig.versionName
     from(layout.buildDirectory.dir("outputs/apk/standard/release")) {
         include("*.apk")
-        rename { "ZyXVirtual-app.zyx.virtual.apk" }
+        rename { "app.zyx.virtual.apk" }
     }
-    from(layout.buildDirectory.dir("outputs/apk/clone/release")) {
+    from(layout.buildDirectory.dir("outputs/apk/v0003/release")) {
         include("*.apk")
-        rename { "ZyXVirtual-app.zyx.virtual.clone.apk" }
+        rename { "app.zyx.virtual.0003.apk" }
     }
-    into(rootProject.layout.projectDirectory.dir("release-apks"))
+    into(rootProject.layout.projectDirectory.dir("release-apks/$v"))
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Gera strings Android em português brasileiro e o localeConfig do app.
-Execute: python app/l10n/gen.py."""
+"""Генерирует res/values*/strings.xml и res/xml/locales_config.xml из langs/*.py.
+Запуск: python app/l10n/gen.py  (английский — язык по умолчанию, values/)."""
 import os, runpy, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -8,8 +8,13 @@ RES = os.path.join(HERE, "..", "src", "main", "res")
 sys.path.insert(0, HERE)
 from keys import KEYS  # noqa: E402
 
-# Código BCP-47 → diretório de recursos Android.
-DIRS = {"pt-BR": "values-pt-rBR"}
+# код языка → каталог ресурсов Android
+DIRS = {
+    "en": "values", "ru": "values-ru", "uk": "values-uk", "de": "values-de", "fr": "values-fr",
+    "es": "values-es", "pt-BR": "values-pt-rBR", "it": "values-it", "pl": "values-pl", "tr": "values-tr",
+    "ar": "values-ar", "fa": "values-fa", "hi": "values-hi", "id": "values-in", "vi": "values-vi",
+    "zh-CN": "values-zh-rCN", "ja": "values-ja", "ko": "values-ko",
+}
 
 
 def esc(s: str) -> str:
@@ -27,16 +32,16 @@ def load(code):
 def main():
     en = load("en")
     missing = [k for k in KEYS if k not in en]
-    assert not missing, f"Catálogo de referência sem chaves: {missing}"
+    assert not missing, f"en: нет ключей {missing}"
     for code, d in DIRS.items():
         s = load(code)
         lack = [k for k in KEYS if k not in s]
         extra = [k for k in s if k not in KEYS]
         if lack or extra:
-            print(f"{code}: faltando {lack}; extras {extra}")
-        out = ['<?xml version="1.0" encoding="utf-8"?>', "<!-- gerado por app/l10n/gen.py; edite langs/*.py -->", "<resources>"]
+            print(f"{code}: нет {lack} лишние {extra}")
+        out = ['<?xml version="1.0" encoding="utf-8"?>', "<!-- создано app/l10n/gen.py, правьте langs/*.py -->", "<resources>"]
         if code == "en":
-            out.append('    <string name="app_name" translatable="false">ZyX Virtual</string>')
+            out.append('    <string name="app_name" translatable="false">ZyXVirtual</string>')
         for k in KEYS:
             if k in s:
                 out.append(f'    <string name="{k}">{esc(s[k])}</string>')
@@ -45,15 +50,6 @@ def main():
         os.makedirs(path, exist_ok=True)
         with open(os.path.join(path, "strings.xml"), "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(out))
-    # The app is Portuguese-only; keep the default resource fallback in pt-BR too.
-    pt = load("pt-BR")
-    out = ['<?xml version="1.0" encoding="utf-8"?>', "<!-- gerado por app/l10n/gen.py -->", "<resources>"]
-    out.append('    <string name="app_name" translatable="false">ZyX Virtual</string>')
-    out.extend(f'    <string name="{k}">{esc(pt[k])}</string>' for k in KEYS)
-    out.append("</resources>\n")
-    with open(os.path.join(RES, "values", "strings.xml"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(out))
-
     tags = [c for c in DIRS]
     xml = ['<?xml version="1.0" encoding="utf-8"?>', '<locale-config xmlns:android="http://schemas.android.com/apk/res/android">']
     xml += [f'    <locale android:name="{t}" />' for t in tags]
@@ -61,7 +57,7 @@ def main():
     os.makedirs(os.path.join(RES, "xml"), exist_ok=True)
     with open(os.path.join(RES, "xml", "locales_config.xml"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(xml))
-    print(f"Concluído: {len(DIRS)} idioma(s), {len(KEYS)} strings.")
+    print(f"готово: {len(DIRS)} языков, {len(KEYS)} строк")
 
 
 if __name__ == "__main__":
