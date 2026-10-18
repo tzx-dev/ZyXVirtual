@@ -223,6 +223,21 @@ h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; }
 .section h2 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -.02em; margin-bottom: 12px; }
 .section__lead { color: var(--on-surface-var); max-width: 720px; font-size: 1.05rem; }
 
+/* ---------- ZyXOS download ---------- */
+.zyx-download { display: flex; gap: 24px; align-items: flex-start; margin-top: 34px; padding: clamp(24px, 5vw, 42px); border-radius: var(--r-xl);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary-container) 82%, transparent), color-mix(in srgb, var(--tertiary-container) 58%, transparent));
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent); box-shadow: 0 18px 50px color-mix(in srgb, var(--primary) 10%, transparent); }
+.zyx-download__icon { flex: 0 0 58px; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 20px; color: var(--on-primary); background: var(--primary); }
+.zyx-download__icon .material-symbols-rounded { font-size: 30px; }
+.zyx-download__body { max-width: 760px; }
+.zyx-download__body .section__chip { margin-bottom: 12px; }
+.zyx-download__body h2 { margin-bottom: 10px; }
+.zyx-download__body p { color: var(--on-surface-var); margin-bottom: 18px; }
+.zyx-download__meta { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 24px; color: var(--on-surface-var); font-size: .9rem; }
+.zyx-download__meta b { color: var(--on-surface); }
+.zyx-download__note { display: block; margin-top: 12px; color: var(--on-surface-var); opacity: .82; }
+@media (max-width: 620px) { .zyx-download { flex-direction: column; } }
+
 /* ---------- О проекте ---------- */
 .about-grid { display: grid; grid-template-columns: 340px 1fr; gap: 56px; align-items: center; }
 .phone-card { display: grid; place-items: center; }
