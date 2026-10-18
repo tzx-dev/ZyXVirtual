@@ -16,6 +16,6 @@ window.AEMU_CONFIG = {
     "author": "https://github.com/uxazu",
     "original": "https://t.me/istratiit_ech",
     "donate": "https://dalink.to/uxazu",
-    "zyxos": "https://drive.google.com/file/d/1B1qdO4a818DN5s8OcFkbpwtGFc09_Mol/view?usp=sharing"
+    "zyxos": "https://drive.google.com/uc?id=1B1qdO4a818DN5s8OcFkbpwtGFc09_Mol&export=download"
   }
 };
