@@ -36,8 +36,8 @@ sealed interface UpdateState {
 }
 
 object AppUpdateManager {
-    private const val RELEASES_API = "https://api.github.com/repos/uxazu/ZyXVirtual/releases"
-    private const val GITHUB_REPO_URL = "https://github.com/uxazu/ZyXVirtual"
+    private const val RELEASES_API = "https://api.github.com/repos/tzx-dev/ZyXVirtual/releases"
+    private const val GITHUB_REPO_URL = "https://github.com/tzx-dev/ZyXVirtual"
 
     /**
      * Запрос к GitHub API для получения информации о последнем релизе с APK-файлом.

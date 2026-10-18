@@ -54,7 +54,8 @@ private val RESOLUTIONS = listOf(
     Res("720×1280", 720, 1280, 320),
 )
 
-private val RAM_STEPS = listOf(0, 256, 512, 768, 1024, 1536, 2048, 3072, 4096)
+private val RAM_STEPS_NORMAL = listOf(0, 256, 512, 768, 1024)
+private val RAM_STEPS_PLUS = listOf(0, 256, 512, 768, 1024, 1536, 2048, 3072, 4096)
 
 @Composable
 fun SettingsSheet(img: GuestImage, onDismiss: () -> Unit, onSave: (VmSettings) -> Unit) {
@@ -108,14 +109,16 @@ fun SettingsSheet(img: GuestImage, onDismiss: () -> Unit, onSave: (VmSettings) -
                 if (has32) stringResource(R.string.vs_native32_sub) else stringResource(R.string.vs_native32_unsupported),
                 s.native32 && has32
             ) { if (has32) s = s.copy(native32 = it) }
-            val ramIdx = RAM_STEPS.indexOf(s.ramMb).coerceAtLeast(0)
+            val ramLimit = if (s.ramPlus) ZyxRam.defaultGuestRamMb() else ZyxRam.BASE_RAM_MB
+            val ramSteps = (if (s.ramPlus) RAM_STEPS_PLUS else RAM_STEPS_NORMAL).filter { it == 0 || it <= ramLimit }
+            val ramIdx = ramSteps.indexOf(s.ramMb).coerceAtLeast(0)
             ListItem(
                 headlineContent = { Text(stringResource(R.string.vs_ram)) },
                 supportingContent = {
                     Column {
                         Text(if (s.ramMb == 0) stringResource(R.string.vs_ram_auto) else "${s.ramMb} MB · ${ZyxRam.label(s.ramMb)}")
-                        Slider(value = ramIdx.toFloat(), onValueChange = { s = s.copy(ramMb = RAM_STEPS[it.toInt()]) },
-                            valueRange = 0f..RAM_STEPS.lastIndex.toFloat(), steps = RAM_STEPS.size - 2)
+                        Slider(value = ramIdx.toFloat(), onValueChange = { s = s.copy(ramMb = ramSteps[it.toInt()]) },
+                            valueRange = 0f..ramSteps.lastIndex.toFloat(), steps = ramSteps.size - 2)
                     }
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),

@@ -491,9 +491,9 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
         // the RAM the guest is told it has (its /proc/meminfo, scaled by the kernel): the framework sizes its background by it
         if (engine == Engine.N64) runCatching {
             val f = File(paths.root, "dev/.aemu-ram")
-            if (kernel.ramBudget) f.writeText((GuestRunner.guestRamMb(img.api, s.ramMb) * 1024L).toString()) else f.delete()
+            if (kernel.ramBudget) f.writeText((GuestRunner.guestRamMb(img.api, s.ramMb, s.ramPlus) * 1024L).toString()) else f.delete()
         }
-        lmk = GuestLmk(paths.root, s.lowRam, ::log, s.ramMb).also { it.start() }
+        lmk = GuestLmk(paths.root, s.lowRam, ::log, GuestRunner.guestRamMb(img.api, s.ramMb, s.ramPlus)).also { it.start() }
         val netCfg = if (s.netProxy) net.start() else GuestRunner.NetConfig()
         runner.sdcardHost = sd
         val r = GuestRunner(paths, img, netCfg.copy(glPath = if (s.gpu) "/dev/socket/gl" else null)).also {

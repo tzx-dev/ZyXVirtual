@@ -279,7 +279,7 @@ fun UpdateDialog(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { onOpenUrl("https://github.com/uxazu/ZyXVirtual") }) {
+                    TextButton(onClick = { onOpenUrl("https://github.com/tzx-dev/ZyXVirtual") }) {
                         Text(stringResource(R.string.update_open_github))
                     }
                 }

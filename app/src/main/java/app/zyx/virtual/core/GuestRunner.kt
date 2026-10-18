@@ -150,7 +150,7 @@ class GuestRunner(
         // libaemushim: the precompiled code under /system is read-only like on the real mount
         e["AEMU_RO_SYSTEM"] = "1"
         // libaemushim serves /proc/meminfo scaled to this budget instead of the phone's own memory
-        e["AEMU_RAM_KB"] = (guestRamMb(img.api, s.ramMb) * 1024L).toString()
+        e["AEMU_RAM_KB"] = (guestRamMb(img.api, s.ramMb, s.ramPlus) * 1024L).toString()
         e["HOME"] = "/data"
         e["TMPDIR"] = "/data/local/tmp"
         e["ASHMEM_SHIM_DIR"] = "/data/local/tmp"
@@ -211,13 +211,14 @@ class GuestRunner(
         private val EXPORTS_SKIP = setOf("PATH", "LD_LIBRARY_PATH", "BOOTCLASSPATH", "LD_PRELOAD")
 
         /** RAM the guest is told it has: the user's choice, or what phones of that Android version shipped with. */
-        fun guestRamMb(api: Int, chosen: Int): Int {
-            if (chosen > 0) return chosen
+        fun guestRamMb(api: Int, chosen: Int, ramPlus: Boolean = true): Int {
+            val maxRam = if (ramPlus) ZyxRam.defaultGuestRamMb() else ZyxRam.BASE_RAM_MB
+            if (chosen > 0) return chosen.coerceIn(256, maxRam)
             val typical = when { api <= 10 -> 512; api <= 15 -> 1024; api <= 19 -> 2048; api <= 23 -> 3072; else -> 4096 }
             val hostMb = runCatching {
                 java.io.File("/proc/meminfo").useLines { l -> l.first { it.startsWith("MemTotal:") } }.split(Regex("\\s+"))[1].toLong() / 1024
             }.getOrDefault(8192L)
-            return typical.coerceAtMost((hostMb / 2).toInt())
+            return typical.coerceAtMost((hostMb / 2).toInt()).coerceAtMost(maxRam)
         }
     }
 }

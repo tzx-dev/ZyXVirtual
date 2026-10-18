@@ -83,13 +83,14 @@ import androidx.compose.ui.unit.dp
 import app.zyx.virtual.AppPrefs
 import app.zyx.virtual.BuildConfig
 import app.zyx.virtual.R
+import app.zyx.virtual.core.ZyxRam
 
 /** Ссылки проекта — одни и те же в приложении, README и на сайте. */
 object Links {
     const val SITE = "https://zyxvirtual.gt.tc"
-    const val GITHUB = "https://github.com/uxazu/zyxvirtual"
+    const val GITHUB = "https://github.com/tzx-dev/ZyXVirtual"
     const val CHANNEL = "https://t.me/zyxvirtualofficial"
-    const val AUTHOR = "https://github.com/uxazu"
+    const val AUTHOR = "https://github.com/tzx-dev"
     const val ORIGINAL = "https://t.me/istratii_tech1"
     const val DONATE = "https://dalink.to/uxazu"
 }
@@ -248,6 +249,13 @@ private fun AppSettings(onBack: () -> Unit, onRestyle: () -> Unit) {
                     Toggle(stringResource(R.string.vs_nav), stringResource(R.string.vs_nav_sub), defaults.showNavBar) { set(defaults.copy(showNavBar = it)) }
                     Toggle(stringResource(R.string.vs_awake), stringResource(R.string.vs_awake_sub), defaults.keepScreenOn) { set(defaults.copy(keepScreenOn = it)) }
                     Toggle(stringResource(R.string.as_led), stringResource(R.string.as_led_sub), defaults.showLed) { set(defaults.copy(showLed = it)) }
+                    Toggle(
+                        stringResource(R.string.vs_ram_plus),
+                        stringResource(R.string.vs_ram_plus_sub, ZyxRam.info().ramPlusMb),
+                        defaults.ramPlus
+                    ) { enabled ->
+                        set(defaults.copy(ramPlus = enabled, ramMb = if (enabled) ZyxRam.defaultGuestRamMb() else ZyxRam.BASE_RAM_MB))
+                    }
                 }
             }
 
@@ -255,9 +263,9 @@ private fun AppSettings(onBack: () -> Unit, onRestyle: () -> Unit) {
                 Section(stringResource(R.string.as_links)) {
                     Row_(Icons.Rounded.Public, stringResource(R.string.as_site), "zyxvirtual.gt.tc") { open(Links.SITE) }
                     Row_(Icons.Rounded.Send, stringResource(R.string.as_channel), "@zyxvirtualofficial") { open(Links.CHANNEL) }
-                    Row_(Icons.Rounded.Person, stringResource(R.string.as_author), "uxazu") { open(Links.AUTHOR) }
+                    Row_(Icons.Rounded.Person, stringResource(R.string.as_author), "tzx-dev") { open(Links.AUTHOR) }
                     Row_(Icons.Rounded.History, stringResource(R.string.as_orig), "t.me/istratii_tech1") { open(Links.ORIGINAL) }
-                    Row_(Icons.Rounded.Code, stringResource(R.string.as_github), "github.com/uxazu/zyxvirtual") { open(Links.GITHUB) }
+                    Row_(Icons.Rounded.Code, stringResource(R.string.as_github), "github.com/tzx-dev/ZyXVirtual") { open(Links.GITHUB) }
                 }
             }
 

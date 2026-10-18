@@ -54,7 +54,7 @@ jobs:
       - name: Publicar artefatos
         uses: actions/upload-artifact@v4
         with:
-          name: zyx-virtual-aemu-0.0.3-${{ github.sha }}
+          name: zyx-virtual-0.3.2-alpha-${{ github.sha }}
           path: |
             app/build/outputs/apk/standard/debug/*.apk
             app/build/outputs/apk/standard/release/*.apk
