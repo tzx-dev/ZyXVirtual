@@ -265,8 +265,14 @@ object InitPlan {
      * its .rc entry): artd of 14+, which system_server waits for at the first boot, or a skin's own daemon.
      */
     fun lazyAidl(iface: String, root: File): GuestService? {
-        val dirs = listOf("system/etc/init", "system_ext/etc/init", "system/system_ext/etc/init", "product/etc/init", "system/product/etc/init").map { File(root, it) } +
-            File(root, "apex").listFiles().orEmpty().map { File(it, "etc") }
+        // Lazy AIDL HALs are commonly declared in vendor/odm init scripts (graphics allocator,
+        // composer, audio and camera). They are disabled until servicemanager requests their
+        // interface, so they are intentionally absent from the eager service plan above.
+        val dirs = listOf(
+            "system/etc/init", "system_ext/etc/init", "system/system_ext/etc/init",
+            "product/etc/init", "system/product/etc/init", "vendor/etc/init", "odm/etc/init",
+            "system/vendor/etc/init", "system/odm/etc/init"
+        ).map { File(root, it) } + File(root, "apex").listFiles().orEmpty().map { File(it, "etc") }
         for (f in dirs.flatMap { d -> d.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".rc") }.sortedBy { it.name } }) {
             var name = ""; var argv = emptyList<String>()
             for (raw in runCatching { f.readLines() }.getOrDefault(emptyList())) {
