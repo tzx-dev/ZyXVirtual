@@ -5,16 +5,19 @@ package app.zyx.virtual.core
  * the socket, one connection per drawing thread, and its commands are played in real GLES 3 contexts here.
  */
 object GlHost {
-    private val ok: Boolean = try { System.loadLibrary("aemugl"); true } catch (_: Throwable) { false }
+    private var nativeOk: Boolean = try { System.loadLibrary("aemugl"); true } catch (_: Throwable) { false }
 
     /** "ok <renderer>, <version>" or why not */
-    fun start(socket: String): String = if (ok) runCatching { nativeStart(socket) }.getOrElse { it.toString() } else "libaemugl.so does not load"
-    fun stop() { if (ok) runCatching { nativeStop() } }
+    fun start(socket: String): String = if (nativeOk) runCatching { nativeStart(socket) }.getOrElse {
+        nativeOk = false
+        "GPU bridge JNI unavailable; software fallback"
+    } else "GPU bridge unavailable; software fallback"
+    fun stop() { if (nativeOk) runCatching { nativeStop() } }
 
     /** the view finished frames are drawn into by the GPU (null: none, frames are dropped) */
-    fun surface(s: android.view.Surface?) { if (ok) runCatching { nativeSurface(s) } }
+    fun surface(s: android.view.Surface?) { if (nativeOk) runCatching { nativeSurface(s) } }
     /** how many frames went to the screen that way since start() */
-    fun presented(): Long = if (ok) runCatching { nativePresented() }.getOrDefault(0L) else 0L
+    fun presented(): Long = if (nativeOk) runCatching { nativePresented() }.getOrDefault(0L) else 0L
 
     @JvmStatic private external fun nativeStart(socket: String): String
     @JvmStatic private external fun nativeStop()

@@ -645,7 +645,8 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
 
     /** File existence is not enough: binderd can leave a stale socket after dying. */
     private fun binderReady(): Boolean {
-        if (!paths.binderSock.isFile) return false
+        // Unix sockets are not regular files: isFile() is false even while binderd is listening.
+        if (!paths.binderSock.exists()) return false
         val binderd = synchronized(procs) { procs["binderd"] }
         if (binderd != null && !binderd.isAlive) return false
         val log = paths.log("binderd")
