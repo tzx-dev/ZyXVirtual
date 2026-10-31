@@ -1,6 +1,8 @@
 package app.zyx.virtual.core
 
 import android.content.Context
+import android.net.LocalSocket
+import android.net.LocalSocketAddress
 import android.os.Process as AProcess
 import android.os.SystemClock
 import android.view.Surface
@@ -517,7 +519,12 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
         paths.vndbinderSock.delete()
         paths.creds.let { d -> d.listFiles()?.forEach { it.delete() }; d.mkdirs() }
         startBinder()
-        if (!waitFor("binder socket", 15_000) { paths.binderSock.exists() }) error("binderd failed to start")
+        if (!waitFor("binder socket", 15_000) { binderReady() }) {
+            val logTail = paths.log("binderd").let { f ->
+                if (f.isFile) runCatching { f.readText().takeLast(4000).trim() }.getOrDefault("") else ""
+            }
+            error("binderd failed to accept connections${if (logTail.isNotEmpty()) ": $logTail" else ""}")
+        }
         if (engine == Engine.N64 && kernel.treble) {
             waitFor("hwbinder socket", 5_000) { paths.hwbinderSock.exists() }
             waitFor("vndbinder socket", 5_000) { paths.vndbinderSock.exists() }
@@ -635,6 +642,20 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
                 Slot.start(ctx, BinderSlot::class.java, listOf("binderd", "-s", sock), emptyMap(), paths.log("binderd"))
                 log("· binderd started (:binder service)")
             }
+        }
+    }
+
+    /** File existence is not enough: binderd can leave a stale socket after dying. */
+    private fun binderReady(): Boolean {
+        if (!paths.binderSock.isFile) return false
+        val socket = LocalSocket(LocalSocket.SOCKET_STREAM)
+        return try {
+            socket.connect(LocalSocketAddress(paths.binderSock.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
+            true
+        } catch (_: Throwable) {
+            false
+        } finally {
+            runCatching { socket.close() }
         }
     }
 
