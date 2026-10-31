@@ -648,14 +648,17 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
     /** File existence is not enough: binderd can leave a stale socket after dying. */
     private fun binderReady(): Boolean {
         if (!paths.binderSock.isFile) return false
-        val socket = LocalSocket(LocalSocket.SOCKET_STREAM)
-        return try {
-            socket.connect(LocalSocketAddress(paths.binderSock.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
-            true
-        } catch (_: Throwable) {
-            false
-        } finally {
-            runCatching { socket.close() }
+        // binderd64 exposes Binder as a Unix SEQPACKET socket; older daemons use STREAM.
+        return listOf(LocalSocket.SOCKET_SEQPACKET, LocalSocket.SOCKET_STREAM).any { type ->
+            val socket = LocalSocket(type)
+            try {
+                socket.connect(LocalSocketAddress(paths.binderSock.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
+                true
+            } catch (_: Throwable) {
+                false
+            } finally {
+                runCatching { socket.close() }
+            }
         }
     }
 
