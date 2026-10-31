@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -60,3 +60,11 @@ jobs:
             app/build/outputs/apk/standard/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publicar APK assinado na release 0.3.5-alpha
+        if: github.ref == 'refs/heads/release/0.3.5-alpha'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/standard/release/*.apk ZyXVirtual-0.3.5-alpha-signed.apk
+          gh release upload v0.3.5-alpha ZyXVirtual-0.3.5-alpha-signed.apk --repo "$GITHUB_REPOSITORY" --clobber
