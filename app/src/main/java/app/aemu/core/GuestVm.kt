@@ -1,6 +1,8 @@
 package app.aemu.core
 
 import android.content.Context
+import android.net.LocalSocket
+import android.net.LocalSocketAddress
 import android.os.Process as AProcess
 import android.os.SystemClock
 import android.view.Surface
@@ -16,6 +18,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 /** Daemons system_server cannot live without: restarted even when init.rc marks them oneshot
  * (MIUI installd dies in the LBE security hook on start). */
 private val ALWAYS_RESTART = setOf("mediaserver", "installd", "netd", "keystore")
+private const val BINDER_READY_TIMEOUT_MS = 15_000L
+private const val BINDER_LOG_TAIL_CHARS = 4_000
 
 /**
  * Одна запущенная виртуальная машина. Живёт в процессе :vm (одна на процесс: GL-мост нельзя
@@ -329,7 +333,20 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
         paths.binderSock.delete()
         paths.creds.let { d -> d.listFiles()?.forEach { it.delete() }; d.mkdirs() }
         startBinder()
-        if (!waitFor("binder socket", 15_000) { paths.binderSock.exists() }) error("binderd failed to start")
+        if (!waitFor("binder daemon", BINDER_READY_TIMEOUT_MS) { binderReady() }) {
+            val binderd = synchronized(procs) { procs["binderd"] }
+            val status = when {
+                binderd == null -> "processo não registrado"
+                !binderd.isAlive -> "processo encerrou com código ${runCatching { binderd.exitValue() }.getOrDefault(-1)}"
+                else -> "socket não aceitou conexão"
+            }
+            val binderdLog = paths.log("binderd")
+            val logTail = if (binderdLog.isFile) {
+                runCatching { binderdLog.readText().takeLast(BINDER_LOG_TAIL_CHARS) }
+                    .getOrDefault("").trim()
+            } else ""
+            error("binderd não ficou pronto ($status)${if (logTail.isNotEmpty()) ": $logTail" else ""}")
+        }
 
         // 5. службы гостя по плану из init.rc прошивки
         val plan = img.services.ifEmpty { InitPlan.fallback(img, paths.root) }
@@ -376,6 +393,22 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
                 Slot.start(ctx, BinderSlot::class.java, listOf("binderd", "-s", sock), emptyMap(), paths.log("binderd"))
                 log("· binderd started (:binder service)")
             }
+        }
+    }
+
+    /** The binderd pathname exists before the daemon starts accepting clients. */
+    private fun binderReady(): Boolean {
+        val daemon = synchronized(procs) { procs["binderd"] }
+        if (daemon != null && !daemon.isAlive) return false
+        if (!paths.binderSock.exists()) return false
+        val socket = LocalSocket()
+        return try {
+            socket.connect(LocalSocketAddress(paths.binderSock.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
+            true
+        } catch (_: Exception) {
+            false
+        } finally {
+            runCatching { socket.close() }
         }
     }
 

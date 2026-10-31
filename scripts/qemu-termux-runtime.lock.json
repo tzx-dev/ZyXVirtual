@@ -1,16 +1,16 @@
 {
-  "indexSha256": "ce2a1d74a827706b293e5ef0bbdb730c1b1f2bd58835e2559a6953c947002f44",
+  "indexSha256": "3779d715b77218f46fae1b783a53994c95b491516df8e63fcd0b2a9764844118",
   "indexUrl": "https://packages.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages.gz",
   "packages": [
     {
       "architecture": "aarch64",
       "depends": "libc++",
-      "filename": "pool/main/a/abseil-cpp/abseil-cpp_20260526.0_aarch64.deb",
-      "installedSizeKiB": 9452,
+      "filename": "pool/main/a/abseil-cpp/abseil-cpp_20260817.0_aarch64.deb",
+      "installedSizeKiB": 9568,
       "name": "abseil-cpp",
-      "sha256": "e489fac652cddc39d9436141e627285f1034a545a06fbb19c420514a419ad877",
-      "size": 1197740,
-      "version": "20260526.0"
+      "sha256": "b698963bb7096494ad928ce89cd869a53e6adf0b05f5f407b40fda9c85c6e2b0",
+      "size": 1214712,
+      "version": "20260817.0"
     },
     {
       "architecture": "aarch64",
@@ -35,12 +35,12 @@
     {
       "architecture": "all",
       "depends": "",
-      "filename": "pool/main/c/ca-certificates/ca-certificates_1:2026.09.25_all.deb",
-      "installedSizeKiB": 232,
+      "filename": "pool/main/c/ca-certificates/ca-certificates_1:2026.10.20-1_all.deb",
+      "installedSizeKiB": 240,
       "name": "ca-certificates",
-      "sha256": "57fab24bf4561bfdd35afe71bc1929914e51c35458cfd1fca2b15e54bc8df7af",
-      "size": 105404,
-      "version": "1:2026.09.25"
+      "sha256": "ab8a7fe63293b455c02399ee125eb8a0041e430ccfdf89a5be8317522fdf9107",
+      "size": 110132,
+      "version": "1:2026.10.20-1"
     },
     {
       "architecture": "aarch64",
@@ -175,12 +175,12 @@
     {
       "architecture": "aarch64",
       "depends": "",
-      "filename": "pool/main/liba/libandroid-stub/libandroid-stub_30-2_aarch64.deb",
-      "installedSizeKiB": 168,
+      "filename": "pool/main/liba/libandroid-stub/libandroid-stub_30-3_aarch64.deb",
+      "installedSizeKiB": 172,
       "name": "libandroid-stub",
-      "sha256": "74087792a86e3f90772627f2217797e422e5d5fc47f24ad825fc3bbb539a667a",
-      "size": 26788,
-      "version": "30-2"
+      "sha256": "88c7f4ba78a5eb57eafc2f1102ceea562a156fe7346528ca35c771eb0927fefc",
+      "size": 27348,
+      "version": "30-3"
     },
     {
       "architecture": "aarch64",
@@ -264,23 +264,23 @@
     },
     {
       "architecture": "aarch64",
-      "depends": "argp, libbz2, liblzma, libelf (= 0.196)",
-      "filename": "pool/main/libd/libdw/libdw_0.196_aarch64.deb",
-      "installedSizeKiB": 828,
+      "depends": "argp, libbz2, liblzma, libelf (= 0.197)",
+      "filename": "pool/main/libd/libdw/libdw_0.197_aarch64.deb",
+      "installedSizeKiB": 832,
       "name": "libdw",
-      "sha256": "2486ab488174ac4a1520f9d5e3e7dbf41a9c54733489e10c2ca24e2de26508f8",
-      "size": 214936,
-      "version": "0.196"
+      "sha256": "6c25c05cbba67671238434306ca5e55444d29c9b425600a710618a189d4f9ebb",
+      "size": 216444,
+      "version": "0.197"
     },
     {
       "architecture": "aarch64",
       "depends": "libandroid-support, zlib, zstd, json-c",
-      "filename": "pool/main/libe/libelf/libelf_0.196_aarch64.deb",
-      "installedSizeKiB": 692,
+      "filename": "pool/main/libe/libelf/libelf_0.197_aarch64.deb",
+      "installedSizeKiB": 696,
       "name": "libelf",
-      "sha256": "cbb0be8f278ae737fdb1e00ffee29444833fe90a051d485d262bcf5b4403a713",
-      "size": 123964,
-      "version": "0.196"
+      "sha256": "c47ee2eee8450274f22218307b31471b76113b2825d3c69a5fdc47180cd68c13",
+      "size": 124228,
+      "version": "0.197"
     },
     {
       "architecture": "aarch64",
@@ -365,12 +365,12 @@
     {
       "architecture": "aarch64",
       "depends": "",
-      "filename": "pool/main/libj/libjpeg-turbo/libjpeg-turbo_3.2.0_aarch64.deb",
+      "filename": "pool/main/libj/libjpeg-turbo/libjpeg-turbo_3.2.1_aarch64.deb",
       "installedSizeKiB": 2304,
       "name": "libjpeg-turbo",
-      "sha256": "e6339075bcde28b4902d5a51f4063164834abfd2fa115e881ae637a34585e54f",
-      "size": 453600,
-      "version": "3.2.0"
+      "sha256": "3e46721f2fbb10d5f53a45b99e2549d18a34ca3751aa4b704b3404fcdea5f8e7",
+      "size": 455972,
+      "version": "3.2.1"
     },
     {
       "architecture": "aarch64",
@@ -655,22 +655,22 @@
     {
       "architecture": "aarch64",
       "depends": "libevent, libnghttp2, libngtcp2, openssl, resolv-conf",
-      "filename": "pool/main/libu/libunbound/libunbound_1.26.1_aarch64.deb",
+      "filename": "pool/main/libu/libunbound/libunbound_1.26.2_aarch64.deb",
       "installedSizeKiB": 1264,
       "name": "libunbound",
-      "sha256": "cbf8d03d16e2cb3f8f640b39f1d0c06dbb6bbb26fdefeeaed97187256bae59d7",
-      "size": 387100,
-      "version": "1.26.1"
+      "sha256": "0eb26a2c0a3f4c80cf11350b4dee4f53f1d154b58bf76555ee13255213178571",
+      "size": 388384,
+      "version": "1.26.2"
     },
     {
       "architecture": "aarch64",
       "depends": "libandroid-support, libiconv",
-      "filename": "pool/main/libu/libunistring/libunistring_1.4.2_aarch64.deb",
-      "installedSizeKiB": 3276,
+      "filename": "pool/main/libu/libunistring/libunistring_1.5_aarch64.deb",
+      "installedSizeKiB": 3320,
       "name": "libunistring",
-      "sha256": "5ff75cdf3ddd4ddf5dc9705050f270c3422820295a4b26f93496d3e8e9060122",
-      "size": 561924,
-      "version": "1.4.2"
+      "sha256": "8853ca1421d6472046a0683d53084b26db1caa50a3aa2bf6422a1276c7dba69b",
+      "size": 574056,
+      "version": "1.5"
     },
     {
       "architecture": "aarch64",
@@ -705,12 +705,12 @@
     {
       "architecture": "aarch64",
       "depends": "libc++, abseil-cpp",
-      "filename": "pool/main/libw/libwebrtc-audio-processing/libwebrtc-audio-processing_1.3-5_aarch64.deb",
-      "installedSizeKiB": 1544,
+      "filename": "pool/main/libw/libwebrtc-audio-processing/libwebrtc-audio-processing_2.1_aarch64.deb",
+      "installedSizeKiB": 1264,
       "name": "libwebrtc-audio-processing",
-      "sha256": "136f87d3c8aec04b94392a10174851936d21402f2f28aacdefd2cfd05ced367c",
-      "size": 409056,
-      "version": "1.3-5"
+      "sha256": "42d9e12e057dbbbbd513cab67a902ebff0f991c4b1cfe58a42374ab18c278be0",
+      "size": 325772,
+      "version": "2.1"
     },
     {
       "architecture": "aarch64",
@@ -835,22 +835,22 @@
     {
       "architecture": "aarch64",
       "depends": "dbus, libandroid-stub, libandroid-execinfo, libandroid-glob, libc++, libltdl, libsndfile, libsoxr, libwebrtc-audio-processing, speexdsp",
-      "filename": "pool/main/p/pulseaudio/pulseaudio_17.0-4_aarch64.deb",
+      "filename": "pool/main/p/pulseaudio/pulseaudio_17.0-5_aarch64.deb",
       "installedSizeKiB": 4020,
       "name": "pulseaudio",
-      "sha256": "b119f3a5beb33273a6457e648a2ea501d6a507be8e99501737897c3ea07854cd",
-      "size": 848412,
-      "version": "17.0-4"
+      "sha256": "4e110e32007fee5aaf67cfa2f35ae67c11ed53f45da857d0def426e2ca66f8c8",
+      "size": 848676,
+      "version": "17.0-5"
     },
     {
       "architecture": "aarch64",
       "depends": "gdbm, libandroid-posix-semaphore, libandroid-support, libbz2, libcrypt, libexpat, libffi, liblzma, libsqlite, ncurses, ncurses-ui-libs, openssl, readline, zlib, zstd",
-      "filename": "pool/main/p/python/python_3.14.6-1_aarch64.deb",
-      "installedSizeKiB": 26164,
+      "filename": "pool/main/p/python/python_3.14.8_aarch64.deb",
+      "installedSizeKiB": 26324,
       "name": "python",
-      "sha256": "3166e56c2b6c03fff41191fbb9d736302978e7c484702814d9f6dc99dd6006bd",
-      "size": 4816756,
-      "version": "3.14.6-1"
+      "sha256": "55fcd7c23a603ba0caeca3ef9e670ec88ff71c1a480101de4983629792563b5e",
+      "size": 4852092,
+      "version": "3.14.8"
     },
     {
       "architecture": "aarch64",
