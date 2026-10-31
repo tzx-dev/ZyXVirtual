@@ -1,8 +1,6 @@
 package app.zyx.virtual.core
 
 import android.content.Context
-import android.net.LocalSocket
-import android.net.LocalSocketAddress
 import android.os.Process as AProcess
 import android.os.SystemClock
 import android.view.Surface
@@ -648,18 +646,11 @@ class GuestVm(val ctx: Context, val img: GuestImage) {
     /** File existence is not enough: binderd can leave a stale socket after dying. */
     private fun binderReady(): Boolean {
         if (!paths.binderSock.isFile) return false
-        // binderd64 exposes Binder as a Unix SEQPACKET socket; older daemons use STREAM.
-        return listOf(LocalSocket.SOCKET_SEQPACKET, LocalSocket.SOCKET_STREAM).any { type ->
-            val socket = LocalSocket(type)
-            try {
-                socket.connect(LocalSocketAddress(paths.binderSock.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
-                true
-            } catch (_: Throwable) {
-                false
-            } finally {
-                runCatching { socket.close() }
-            }
-        }
+        val binderd = synchronized(procs) { procs["binderd"] }
+        if (binderd != null && !binderd.isAlive) return false
+        val log = paths.log("binderd")
+        if (!log.isFile) return true
+        return runCatching { log.readText().contains("listening on") }.getOrDefault(false)
     }
 
     private fun glUp() {
